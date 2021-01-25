@@ -14,9 +14,21 @@
 
           </div>
         </div>
-
-
+    {% empty %}
+        <h3>Nothing here...</h3>
     {% endfor %}
+<div class="row ">
+    <div class="col-md-6 mx-auto">
+    <form method = "GET" action="">
+        <div class="mb-3">
+            {{form.as_p}}
+        </div>
+        <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+    </div>
+</div>
+
+
 {% endblock %}
 
 
