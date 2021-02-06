@@ -73,4 +73,3 @@ h = codecs.open('scrap.txt', 'w', 'utf-8')
 h.write(str(jobs))
 h.close()
 """
-
