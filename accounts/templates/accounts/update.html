@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %} Register {% endblock %}
+
+{% block content %}
+
+<div class="row ">
+    <div class="col-md-8 mx-auto">
+        <h4 class="my-2">Settings</h4>
+        <form method="POST" action="">{% csrf_token %}
+            <div class="form-group">
+                {{ form.as_p }}
+            </div>
+            <button type="submit" class="btn btn-primary">Save</button>
+        </form>
+        <form method="POST" action="{% url 'accounts:delete' %} ">{% csrf_token %}
+            <button type="submit" class="btn btn-danger my-3">Delete</button>
+        </form>
+    </div>
+</div>
+
+<div class="row my-5">
+    <div class="col-md-8 mx-auto">
+        <p class="my-2">If you have not found a suitable set City, Specialty,
+            You can fill out the form below with your wishes. After,
+            as the required data is added, you will receive a letter to your specified e-mail.</p>
+        <p>
+            <button class="btn btn-success"
+                    type="button" data-toggle="collapse"
+                    data-target="#collapsed" aria-expanded="false"
+                    aria-controls="collapseExample">
+                Show form
+            </button>
+        </p>
+        <div class="collapse" id="collapsed">
+            <div class="card card-body">
+                <form method="POST" action="{% url 'accounts:contact' %} ">{% csrf_token %}
+                    <div class="form-group">
+                        {{ contact_form.as_p }}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send</button>
+                </form>
+            </div>
+        </div>
+
+
+    </div>
+</div>
+{% endblock %}

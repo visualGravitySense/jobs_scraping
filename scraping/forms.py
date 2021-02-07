@@ -41,15 +41,15 @@ class UserUpdateForm(forms.Form):
     city = forms.ModelChoiceField(
         queryset=City.objects.all(), to_field_name="slug", required=True,
         widget=forms.Select(attrs={'class': 'form-control'}),
-        label='Город'
+        label='City'
     )
     language = forms.ModelChoiceField(
         queryset=Language.objects.all(), to_field_name="slug", required=True,
         widget=forms.Select(attrs={'class': 'form-control'}),
-        label='Специальность'
+        label='Specialty'
     )
     send_email = forms.BooleanField(required=False, widget=forms.CheckboxInput,
-                                    label='Получать рассылку?')
+                                    label='Receive newsletter?')
 
     class Meta:
         model = User
@@ -59,13 +59,13 @@ class UserUpdateForm(forms.Form):
 class ContactForm(forms.Form):
     city = forms.CharField(
         required=True,  widget=forms.TextInput(attrs={'class': 'form-control'}),
-        label='Город'
+        label='City'
     )
     language = forms.CharField(
         required=True,  widget=forms.TextInput(attrs={'class': 'form-control'}),
-        label='Специальность'
+        label='Specialty'
     )
     email = forms.EmailField(
-        label='Введите имэйл', required=True, widget=forms.EmailInput(
+        label='Enter email', required=True, widget=forms.EmailInput(
                                  attrs={'class': 'form-control'})
     )
