@@ -14,7 +14,7 @@ This project is a web scraping server that collects job listings from local job 
 1. Clone the repository:
    ```sh
    git clone https://github.com/yourusername/digo_django.git
-   cd src
+   cd digo_django
    ```
 
 2. Install dependencies:
