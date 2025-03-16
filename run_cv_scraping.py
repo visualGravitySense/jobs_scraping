@@ -1,21 +1,19 @@
-import codecs
 import os, sys
 
 from django.contrib.auth import get_user_model
-from django.db import DatabaseError
 
 
 proj = os.path.dirname(os.path.abspath('manage.py'))
 sys.path.append(proj)
-os.environ["DJANGO_SETTINGS_MODULE"] = "digo_django.settings"
+os.environ["DJANGO_SETTINGS_MODULE"] = "configs.settings"
 
 import django
 django.setup()
 
 
-from scraping.parsers import *
+from apps.scraping.parsers import *
 
-from scraping.models import Vacancy, City, Language, Error, Url
+from apps.scraping.models import Vacancy, City, Language, Error, Url
 
 User = get_user_model()
 
@@ -67,9 +65,3 @@ for job in jobs:
 
 if errors:
     er = Error(data=errors).save()
-
-"""
-h = codecs.open('scrap.txt', 'w', 'utf-8')
-h.write(str(jobs))
-h.close()
-"""

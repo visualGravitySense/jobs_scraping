@@ -1,11 +1,16 @@
 import datetime as dt
+
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib import messages
 
-from accounts.forms import UserLoginForm, UserRegistrationForm, UserUpdateForm, \
-    ContactForm
-from scraping.models import Error
+from apps.accounts.forms import (
+    UserLoginForm, UserRegistrationForm, 
+    UserUpdateForm,ContactForm
+    )
+
+from apps.scraping.models import Error
+
 
 User = get_user_model()
 

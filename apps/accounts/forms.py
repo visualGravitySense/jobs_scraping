@@ -2,7 +2,8 @@ from django import forms
 from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.hashers import check_password
 
-from scraping.models import City, Language
+from apps.scraping.models import City, Language
+
 
 User = get_user_model()
 
