@@ -1,14 +1,15 @@
 from django.core.paginator import Paginator
 from django.shortcuts import render
+
 from .models import Vacancy
 from .forms import FindForm
 
+
 # Create your views here.
 def home_view(request):
-    #print(request.GET)
     form = FindForm()
-
     return render(request, 'scraping/home.html', {'form': form})
+
 
 def list_view(request):
     #print(request.GET)
