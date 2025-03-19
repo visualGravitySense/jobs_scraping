@@ -2,6 +2,7 @@ import os, sys
 import django
 import datetime
 
+from config.settings import EMAIL_HOST_USER
 from django.core.mail import EmailMultiAlternatives
 from django.contrib.auth import get_user_model
 
@@ -10,14 +11,9 @@ from apps.scraping.models import Vacancy, Error, Url
 
 proj = os.path.dirname(os.path.abspath('manage.py'))
 sys.path.append(proj)
-os.environ["DJANGO_SETTINGS_MODULE"] = "scraping_service.settings"
+os.environ["DJANGO_SETTINGS_MODULE"] = "config.settings"
 
 django.setup()
-
-from scraping_service.settings import (
-    EMAIL_HOST_USER,
-    EMAIL_HOST, EMAIL_HOST_PASSWORD
-)
 
 ADMIN_USER = EMAIL_HOST_USER
 
