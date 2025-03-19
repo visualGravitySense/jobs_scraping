@@ -31,6 +31,12 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+# Quick-start development settings - unsuitable for production
+# See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
+
+# SECURITY WARNING: keep the secret key used in production secret!
+
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -77,8 +83,14 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-# Password validation
-# https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
+
+# Local settings Variable
+DATABASES = LOCAL_DATABASES
+BEBUG = LOCAL_DEBUG
+ALLOWED_HOSTS = LOCAL_ALLOWED_HOSTS
+SECRET_KEY = LOCAL_SECRET_KEY
+
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {
