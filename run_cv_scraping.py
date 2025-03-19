@@ -2,18 +2,15 @@ import os, sys
 
 from django.contrib.auth import get_user_model
 
-
-proj = os.path.dirname(os.path.abspath('manage.py'))
-sys.path.append(proj)
-os.environ["DJANGO_SETTINGS_MODULE"] = "configs.settings"
+from apps.scraping.parsers import *
+from apps.scraping.models import Vacancy, City, Language, Error, Url
 
 import django
 django.setup()
 
-
-from apps.scraping.parsers import *
-
-from apps.scraping.models import Vacancy, City, Language, Error, Url
+proj = os.path.dirname(os.path.abspath('manage.py'))
+sys.path.append(proj)
+os.environ["DJANGO_SETTINGS_MODULE"] = "configs.settings"
 
 User = get_user_model()
 
