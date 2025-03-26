@@ -1,4 +1,4 @@
-# Job Scraping Server
+# Job Scraping Service
 
 This project is a web scraping server that collects job listings from local job search websites. It allows users to retrieve and analyze job postings programmatically.
 
