@@ -47,6 +47,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    # Third party apps
+    'django_celery_beat',
+
     # MY Apps
     'apps.scraping',
     'apps.accounts',
@@ -141,3 +144,23 @@ EMAIL_HOST_PASSWORD = EMAIL_HOST_PASSWORD
 
 #STATICFILES_DIRS = (os.path.join(BASE_DIR, 'static'),)
 #STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Celery Configuration
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+
+# Celery Beat Schedule
+CELERY_BEAT_SCHEDULE = {
+    'scrape-cv-ee-jobs': {
+        'task': 'apps.scraping.tasks.scrape_cv_ee_jobs',
+        'schedule': 3600.0,  # Run every hour
+    },
+    'scrape-linkedin-jobs': {
+        'task': 'apps.scraping.tasks.scrape_linkedin_jobs',
+        'schedule': 3600.0,  # Run every hour
+    },
+}

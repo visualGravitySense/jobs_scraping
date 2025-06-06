@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Job Scraper{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-body">
+                <h1 class="card-title text-center mb-4">Job Scraper</h1>
+                <p class="card-text text-center">
+                    Find the best job opportunities from multiple sources.
+                </p>
+                <div class="text-center">
+                    <a href="{% url 'list' %}" class="btn btn-primary">View Jobs</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
