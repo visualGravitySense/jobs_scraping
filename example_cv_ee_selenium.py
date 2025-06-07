@@ -5,6 +5,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import undetected_chromedriver as uc
+from bs4 import BeautifulSoup  # NEW: for parsing HTML
 
 def scrape_cv_ee():
     options = webdriver.ChromeOptions()
@@ -36,7 +37,6 @@ def scrape_cv_ee():
     # Ждем загрузки страницы с вакансиями
     try:
         print("Ожидаем появления объявлений о вакансиях...")
-        # Ждем загрузки элемента body
         WebDriverWait(driver, 30).until(
             EC.presence_of_element_located((By.TAG_NAME, 'body'))
         )
@@ -67,40 +67,37 @@ def scrape_cv_ee():
         f.write(driver.page_source)
     print("Исходный код страницы сохранен в page_source.html")
 
-    # Селекторы для извлечения информации о вакансиях
-    # !!! ЭТИ СЕЛЕКТОРЫ НУЖНО БУДЕТ ПРОВЕРИТЬ И ИСПРАВИТЬ ПОСЛЕ АНАЛИЗА page_source.html !!!
-    job_cards_selector = '[class*="vacancy-item"]'
-    title_selector = '.jsx-3091937985.title'
-    company_selector = '.jsx-3091937985.employer'
-    location_selector = '.jsx-3091937985.location'
-
-    jobs = []
-    print(f"Пробуем селектор: {job_cards_selector}")
-    cards = driver.find_elements(By.CSS_SELECTOR, job_cards_selector)
-    print(f"Найдено вакансий с селектором {job_cards_selector}: {len(cards)}")
-
-    if not cards:
-        print("Не удалось найти элементы вакансий. Возможно, селектор неверный или страница не загрузилась корректно.")
+    # --- NEW: Extract job data from embedded JSON ---
+    print("Извлекаем вакансии из JSON внутри <script id=__NEXT_DATA__> ...")
+    soup = BeautifulSoup(driver.page_source, "html.parser")
+    script_tag = soup.find("script", id="__NEXT_DATA__")
+    if not script_tag:
+        print("Не найден тег <script id=__NEXT_DATA__>!")
+        driver.quit()
+        return
+    try:
+        data = json.loads(script_tag.string)
+        vacancies = data["props"]["pageProps"]["searchResults"]["vacancies"]
+    except Exception as e:
+        print(f"Ошибка при разборе JSON: {e}")
         driver.quit()
         return
 
-    for card in cards:
-        try:
-            title_element = card.find_element(By.CSS_SELECTOR, title_selector)
-            title = title_element.text.strip()
-            company_element = card.find_element(By.CSS_SELECTOR, company_selector)
-            company = company_element.text.strip()
-            location_element = card.find_element(By.CSS_SELECTOR, location_selector)
-            location = location_element.text.strip()
-
-            jobs.append({
-                'title': title,
-                'company': company,
-                'location': location
-            })
-        except Exception as e:
-            print(f"Ошибка при парсинге карточки вакансии: {e}")
-            continue
+    jobs = []
+    for job in vacancies:
+        jobs.append({
+            'title': job.get('positionTitle'),
+            'company': job.get('employerName'),
+            'location': job.get('townId'),  # townId is a number, you may want to map it to a name
+            'salaryFrom': job.get('salaryFrom'),
+            'salaryTo': job.get('salaryTo'),
+            'remoteWork': job.get('remoteWork'),
+            'publishDate': job.get('publishDate'),
+            'expirationDate': job.get('expirationDate'),
+            'description': job.get('positionContent'),
+            'id': job.get('id'),
+            'employerId': job.get('employerId'),
+        })
 
     # Сохраняем вакансии в JSON файл
     output_file = 'cv_ee_jobs.json'

@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect
 from django.views import View
 from django.contrib import messages
 
-from .models import Vacancy
+from .models import Vacancy, ParsedJob
 from .forms import FindForm
 from .scrapers.linkedin_scraper import LinkedInScraper
 
@@ -58,3 +58,9 @@ class LinkedInCallbackView(View):
             messages.error(request, f"Error authenticating with LinkedIn: {str(e)}")
             
         return redirect('home')  # Replace with your home URL name
+
+
+def parsed_jobs_list_view(request):
+    jobs = ParsedJob.objects.all()
+    context = {'object_list': jobs}
+    return render(request, 'scraping/parsed_jobs_list.html', context)

@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Parsed Jobs - Job Scraper{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Available Parsed Jobs</h1>
+        {% if object_list %}
+            {% for job in object_list %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ job.title }}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">{{ job.company }}</h6>
+                        <p class="card-text">
+                            <strong>Location:</strong> {{ job.location }}<br>
+                            <strong>Salary:</strong>
+                            {% if job.salary_from and job.salary_to %}
+                                {{ job.salary_from }} - {{ job.salary_to }}
+                            {% elif job.salary_from %}
+                                From {{ job.salary_from }}
+                            {% elif job.salary_to %}
+                                Up to {{ job.salary_to }}
+                            {% else %}
+                                Not specified
+                            {% endif %}<br>
+                            <strong>Remote:</strong> {{ job.remote_work|yesno:"Yes,No" }}<br>
+                            <strong>Publish Date:</strong> {{ job.publish_date }}<br>
+                            <strong>Expiration Date:</strong> {{ job.expiration_date }}<br>
+                        </p>
+                        <p>{{ job.description|default:"No description" }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">
+                No parsed jobs found.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

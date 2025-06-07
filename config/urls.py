@@ -19,7 +19,6 @@ from apps.scraping.views import home_view, list_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', home_view, name='home'),
-    path('list/', list_view, name='list'),
+    path('', include('apps.scraping.urls')),
     path('accounts/', include(('apps.accounts.urls', 'accounts'))),
 ]

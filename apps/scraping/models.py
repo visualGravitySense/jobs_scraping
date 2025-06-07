@@ -107,9 +107,9 @@ class Job(models.Model):
         return f"{self.title} at {self.company}"
 
 class JobScore(models.Model):
-    job = models.OneToOneField(Job, on_delete=models.CASCADE, related_name='score')
+    job = models.OneToOneField(Job, on_delete=models.CASCADE, related_name='score', null=True, blank=True)
     score = models.FloatField(default=0.0)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -134,3 +134,36 @@ class LinkedInAuth(models.Model):
 
     def __str__(self):
         return self.email
+
+class ParsedCompany(models.Model):
+    employer_id = models.IntegerField(primary_key=True)
+    name = models.CharField(max_length=255)
+    job_count = models.IntegerField(default=0)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Parsed Company'
+        verbose_name_plural = 'Parsed Companies'
+
+    def __str__(self):
+        return self.name
+
+class ParsedJob(models.Model):
+    id = models.BigIntegerField(primary_key=True)
+    title = models.CharField(max_length=255)
+    company = models.CharField(max_length=255)
+    location = models.CharField(max_length=255)
+    salary_from = models.FloatField(null=True, blank=True)
+    salary_to = models.FloatField(null=True, blank=True)
+    remote_work = models.BooleanField(default=False)
+    publish_date = models.DateTimeField(null=True, blank=True)
+    expiration_date = models.DateTimeField(null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
+    employer = models.ForeignKey(ParsedCompany, on_delete=models.CASCADE, related_name='jobs')
+
+    class Meta:
+        verbose_name = 'Parsed Job'
+        verbose_name_plural = 'Parsed Jobs'
+
+    def __str__(self):
+        return f"{self.title} at {self.company}"
