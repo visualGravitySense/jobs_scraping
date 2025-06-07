@@ -1,5 +1,6 @@
 import jsonfield
 from django.db import models
+from django.utils import timezone
 
 from .utils import from_cyrillic_to_eng
 
@@ -58,6 +59,9 @@ class Vacancy(models.Model):
     city = models.ForeignKey('City', on_delete = models.CASCADE, verbose_name='Город')
     language = models.ForeignKey('Language', on_delete=models.CASCADE, verbose_name='Язык программирования')
     timestamp = models.DateField(auto_now_add=True)
+    salary_min = models.IntegerField(default=None, null=True, blank=True, verbose_name='Минимальная зарплата')
+    salary_max = models.IntegerField(default=None, null=True, blank=True, verbose_name='Максимальная зарплата')
+    salary_currency = models.CharField(max_length=10, default='EUR', verbose_name='Валюта зарплаты')
 
     class Meta:
         verbose_name = 'Название вакансии'
@@ -80,3 +84,53 @@ class Url(models.Model):
 
     class Meta:
         unique_together = ("city", "language")
+
+class Job(models.Model):
+    title = models.CharField(max_length=255)
+    company = models.CharField(max_length=255)
+    location = models.CharField(max_length=255)
+    description = models.TextField()
+    url = models.URLField(unique=True)
+    source = models.CharField(max_length=50)
+    posted_date = models.DateTimeField(null=True, blank=True)
+    employment_type = models.CharField(max_length=100, null=True, blank=True)
+    salary = models.CharField(max_length=100, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Job'
+        verbose_name_plural = 'Jobs'
+        ordering = ['-posted_date', '-created_at']
+
+    def __str__(self):
+        return f"{self.title} at {self.company}"
+
+class JobScore(models.Model):
+    job = models.OneToOneField(Job, on_delete=models.CASCADE, related_name='score')
+    score = models.FloatField(default=0.0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Job Score'
+        verbose_name_plural = 'Job Scores'
+        ordering = ['-score', '-updated_at']
+
+    def __str__(self):
+        return f"Score for {self.job.title}: {self.score}"
+
+class LinkedInAuth(models.Model):
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=255)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'LinkedIn Auth'
+        verbose_name_plural = 'LinkedIn Auths'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.email

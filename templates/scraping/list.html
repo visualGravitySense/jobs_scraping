@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Jobs - Job Scraper{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Available Jobs</h1>
+        
+        {% if object_list %}
+            {% for vacancy in object_list %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ vacancy.title }}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">{{ vacancy.company }}</h6>
+                        <p class="card-text">
+                            <strong>Location:</strong> {{ vacancy.city.name }}<br>
+                            <strong>Language:</strong> {{ vacancy.language.name }}<br>
+                            {% if vacancy.salary_min or vacancy.salary_max %}
+                                <strong>Salary:</strong>
+                                {% if vacancy.salary_min and vacancy.salary_max %}
+                                    {{ vacancy.salary_min }} - {{ vacancy.salary_max }} {{ vacancy.salary_currency }}
+                                {% elif vacancy.salary_min %}
+                                    From {{ vacancy.salary_min }} {{ vacancy.salary_currency }}
+                                {% elif vacancy.salary_max %}
+                                    Up to {{ vacancy.salary_max }} {{ vacancy.salary_currency }}
+                                {% endif %}
+                            {% endif %}
+                        </p>
+                        <a href="{{ vacancy.url }}" class="btn btn-primary" target="_blank">View Job</a>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">
+                No jobs found. Try adjusting your search criteria.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 
