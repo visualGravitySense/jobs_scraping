@@ -49,6 +49,7 @@ INSTALLED_APPS = [
 
     # Third party apps
     'django_celery_beat',
+    'django_celery_results',
 
     # MY Apps
     'apps.scraping',
@@ -152,6 +153,7 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 # Celery Beat Schedule
 CELERY_BEAT_SCHEDULE = {

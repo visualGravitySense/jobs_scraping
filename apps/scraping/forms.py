@@ -70,3 +70,55 @@ class ContactForm(forms.Form):
         label='Enter email', required=True, widget=forms.EmailInput(
                                  attrs={'class': 'form-control'})
     )
+
+
+class ParsedJobFilterForm(forms.Form):
+    search = forms.CharField(
+        max_length=255, 
+        required=False, 
+        widget=forms.TextInput(attrs={
+            'class': 'form-control', 
+            'placeholder': 'Search jobs by title or description...'
+        }),
+        label='Search'
+    )
+    company = forms.CharField(
+        max_length=255,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control', 
+            'placeholder': 'Company name'
+        }),
+        label='Company'
+    )
+    location = forms.CharField(
+        max_length=255,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control', 
+            'placeholder': 'Location'
+        }),
+        label='Location'
+    )
+    salary_from = forms.IntegerField(
+        required=False,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control', 
+            'placeholder': 'Min salary'
+        }),
+        label='Salary From'
+    )
+    salary_to = forms.IntegerField(
+        required=False,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control', 
+            'placeholder': 'Max salary'
+        }),
+        label='Salary To'
+    )
+    remote_work = forms.ChoiceField(
+        choices=[('', 'Any'), ('true', 'Remote'), ('false', 'On-site')],
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label='Work Type'
+    )
