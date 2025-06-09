@@ -64,7 +64,7 @@ def job_list_view(request):
         )
     
     if source:
-        jobs = jobs.filter(source=source)
+        jobs = jobs.filter(source_site=source)
     
     # Sorting
     sort_by = request.GET.get('sort', '-created_at')
@@ -76,7 +76,7 @@ def job_list_view(request):
     page_obj = paginator.get_page(page_number)
     
     # Get unique sources for filter
-    sources = Job.objects.values_list('source', flat=True).distinct()
+    sources = Job.objects.values_list('source_site', flat=True).distinct()
     
     context = {
         'jobs': page_obj,

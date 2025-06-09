@@ -1,4 +1,3 @@
-import jsonfield
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth import get_user_model
@@ -99,14 +98,14 @@ class Vacancy(models.Model):
 class Error(models.Model):
     id = models.AutoField(primary_key=True)
     timestamp = models.DateField(auto_now_add=True)
-    data = jsonfield.JSONField()
+    data = models.JSONField()
 
 
 class Url(models.Model):
     id = models.AutoField(primary_key=True)
     city = models.ForeignKey('City', on_delete=models.CASCADE, verbose_name='Город')
     language = models.ForeignKey('Language', on_delete=models.CASCADE, verbose_name='Язык программирования')
-    url_data = jsonfield.JSONField(default=default_urls)
+    url_data = models.JSONField(default=default_urls)
 
     class Meta:
         unique_together = ("city", "language")
@@ -269,3 +268,28 @@ class ParsedJob(models.Model):
 
     def __str__(self):
         return f"{self.title} at {self.company}"
+
+class Scraper(models.Model):
+    STATUS_CHOICES = [
+        ('idle', 'Idle'),
+        ('running', 'Running'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+    ]
+    
+    name = models.CharField(max_length=100)
+    source = models.CharField(max_length=50, choices=Job.SOURCE_SITES)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='idle')
+    last_run = models.DateTimeField(null=True, blank=True)
+    next_run = models.DateTimeField(null=True, blank=True)
+    config = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Scraper'
+        verbose_name_plural = 'Scrapers'
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"{self.name} ({self.source})"

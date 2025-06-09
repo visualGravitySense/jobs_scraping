@@ -22,13 +22,13 @@ def login_view(request):
         password = data.get('password')
         user = authenticate(request, email=email, password=password)
         login(request, user)
-        return redirect('home')
+        return redirect('scraping:job_list')
     return render(request, 'accounts/login.html', {'form': form})
 
 
 def logout_view(request):
     logout(request)
-    return redirect('home')
+    return redirect('scraping:job_list')
 
 
 def register_view(request):
@@ -74,7 +74,7 @@ def delete_view(request):
             qs = User.objects.get(pk=user.pk)
             qs.delete()
             messages.error(request, 'User deleted :(')
-    return redirect('home')
+    return redirect('scraping:job_list')
 
 
 def contact(request):
