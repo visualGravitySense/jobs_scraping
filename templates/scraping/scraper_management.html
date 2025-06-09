@@ -1,26 +1,25 @@
 {% extends 'base.html' %}
 
-{% block title %}Scraper Management{% endblock %}
+{% block title %}Управление скраперами{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <h1 class="mb-4">Scraper Management</h1>
+    <h1 class="mb-4">Управление скраперами</h1>
 
-    <!-- Scraper Status -->
+    <!-- Статус скраперов -->
     <div class="card mb-4">
         <div class="card-header">
-            <h5 class="card-title mb-0">Scraper Status</h5>
+            <h5 class="card-title mb-0">Статус скраперов</h5>
         </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Scraper</th>
-                            <th>Status</th>
-                            <th>Last Run</th>
-                            <th>Jobs Found</th>
-                            <th>Actions</th>
+                            <th>Скрапер</th>
+                            <th>Статус</th>
+                            <th>Последний запуск</th>
+                            <th>Действия</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -28,15 +27,26 @@
                         <tr>
                             <td>{{ scraper.name }}</td>
                             <td>
-                                <span class="badge bg-{{ scraper.status|lower }}">{{ scraper.status }}</span>
+                                {% if scraper.status == 'running' %}
+                                    <span class="badge bg-success">Запущен</span>
+                                {% elif scraper.status == 'idle' %}
+                                    <span class="badge bg-secondary">Остановлен</span>
+                                {% elif scraper.status == 'failed' %}
+                                    <span class="badge bg-danger">Ошибка</span>
+                                {% else %}
+                                    <span class="badge bg-info">{{ scraper.status }}</span>
+                                {% endif %}
                             </td>
-                            <td>{{ scraper.last_run|default:"Never" }}</td>
-                            <td>{{ scraper.jobs_found }}</td>
+                            <td>{{ scraper.last_run|default:"Никогда" }}</td>
                             <td>
                                 <form method="post" class="d-inline">
                                     {% csrf_token %}
                                     <input type="hidden" name="scraper_id" value="{{ scraper.id }}">
-                                    <button type="submit" name="action" value="run" class="btn btn-primary btn-sm">Run Now</button>
+                                    {% if scraper.status == 'running' %}
+                                        <button type="submit" name="action" value="stop" class="btn btn-danger btn-sm">Остановить</button>
+                                    {% else %}
+                                        <button type="submit" name="action" value="start" class="btn btn-success btn-sm">Запустить</button>
+                                    {% endif %}
                                 </form>
                             </td>
                         </tr>
