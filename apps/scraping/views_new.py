@@ -17,7 +17,7 @@ from io import BytesIO
 
 from .models import (
     Vacancy, ParsedJob, ParsedCompany, Job, Company, 
-    JobScore, UserProfile, Application, Scraper
+    JobScore, UserProfile, Application
 )
 from .forms import FindForm, ParsedJobFilterForm
 from .scrapers.linkedin_scraper import LinkedInScraper
@@ -25,7 +25,6 @@ from .services import JobAnalyticsService, NotificationService
 from .tasks import scrape_all_sources, calculate_job_scores
 
 
-# Create your views here.
 def home_view(request):
     """Главная страница с поиском вакансий"""
     form = FindForm()
@@ -49,41 +48,93 @@ def home_view(request):
 
 
 def job_list_view(request):
-    """List all jobs with filtering and sorting options"""
-    jobs = Job.objects.filter(is_active=True).select_related('company')
+    """Список всех вакансий с фильтрацией"""
+    jobs = Job.objects.filter(is_active=True).select_related('company', 'jobscore')
     
-    # Filtering
+    # Фильтрация
     search = request.GET.get('search')
-    source = request.GET.get('source')
+    location = request.GET.get('location')
+    company = request.GET.get('company')
+    min_salary = request.GET.get('min_salary')
+    max_salary = request.GET.get('max_salary')
+    is_remote = request.GET.get('is_remote')
+    experience_level = request.GET.get('experience_level')
+    source_site = request.GET.get('source_site')
     
     if search:
         jobs = jobs.filter(
             Q(title__icontains=search) | 
             Q(description__icontains=search) |
+            Q(requirements__icontains=search) |
             Q(company_name__icontains=search)
         )
     
-    if source:
-        jobs = jobs.filter(source=source)
+    if location:
+        jobs = jobs.filter(location__icontains=location)
     
-    # Sorting
+    if company:
+        jobs = jobs.filter(company_name__icontains=company)
+    
+    if min_salary:
+        try:
+            jobs = jobs.filter(salary_min__gte=int(min_salary))
+        except ValueError:
+            pass
+    
+    if max_salary:
+        try:
+            jobs = jobs.filter(salary_max__lte=int(max_salary))
+        except ValueError:
+            pass
+    
+    if is_remote == 'true':
+        jobs = jobs.filter(is_remote=True)
+    elif is_remote == 'false':
+        jobs = jobs.filter(is_remote=False)
+    
+    if experience_level:
+        jobs = jobs.filter(experience_level=experience_level)
+    
+    if source_site:
+        jobs = jobs.filter(source_site=source_site)
+    
+    # Сортировка
     sort_by = request.GET.get('sort', '-created_at')
-    jobs = jobs.order_by(sort_by)
+    if sort_by == 'relevance':
+        jobs = jobs.order_by('-jobscore__relevance_score', '-created_at')
+    elif sort_by == 'salary':
+        jobs = jobs.order_by('-salary_min', '-created_at')
+    elif sort_by == 'company':
+        jobs = jobs.order_by('company_name', '-created_at')
+    else:
+        jobs = jobs.order_by(sort_by)
     
-    # Pagination
+    # Пагинация
     paginator = Paginator(jobs, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Get unique sources for filter
-    sources = Job.objects.values_list('source', flat=True).distinct()
+    # Получаем уникальные значения для фильтров
+    locations = Job.objects.filter(is_active=True).values_list('location', flat=True).distinct()
+    companies = Job.objects.filter(is_active=True).values_list('company_name', flat=True).distinct()
     
     context = {
-        'jobs': page_obj,
-        'sources': sources,
+        'object_list': page_obj,
+        'total_jobs': jobs.count(),
+        'page_obj': page_obj,
+        'locations': [loc for loc in locations if loc],
+        'companies': [comp for comp in companies if comp],
+        'experience_levels': Job.EXPERIENCE_LEVELS,
+        'source_sites': Job.SOURCE_SITES,
         'current_filters': {
             'search': search,
-            'source': source,
+            'location': location,
+            'company': company,
+            'min_salary': min_salary,
+            'max_salary': max_salary,
+            'is_remote': is_remote,
+            'experience_level': experience_level,
+            'source_site': source_site,
             'sort': sort_by
         }
     }
@@ -91,18 +142,34 @@ def job_list_view(request):
 
 
 def job_detail_view(request, job_id):
-    """Detailed view of a specific job"""
+    """Детальная страница вакансии"""
     job = get_object_or_404(Job, id=job_id, is_active=True)
     
-    # Get similar jobs
+    # Получаем скор вакансии
+    try:
+        job_score = job.jobscore
+    except JobScore.DoesNotExist:
+        job_score = None
+    
+    # Получаем похожие вакансии
     similar_jobs = Job.objects.filter(
         is_active=True,
-        job_type=job.job_type
+        experience_level=job.experience_level
     ).exclude(id=job.id).select_related('company')[:5]
+    
+    # Проверяем, подавал ли пользователь заявку на эту вакансию
+    user_application = None
+    if request.user.is_authenticated:
+        try:
+            user_application = Application.objects.get(user=request.user, job=job)
+        except Application.DoesNotExist:
+            pass
     
     context = {
         'job': job,
-        'similar_jobs': similar_jobs
+        'job_score': job_score,
+        'similar_jobs': similar_jobs,
+        'user_application': user_application
     }
     return render(request, 'scraping/job_detail.html', context)
 
@@ -158,39 +225,6 @@ def my_applications_view(request):
         'current_status': status_filter
     }
     return render(request, 'scraping/my_applications.html', context)
-
-
-@login_required
-def update_application_status_view(request, application_id):
-    """Обновление статуса заявки"""
-    application = get_object_or_404(Application, id=application_id, user=request.user)
-    
-    if request.method == 'POST':
-        new_status = request.POST.get('status')
-        notes = request.POST.get('notes', application.notes)
-        reminder_date = request.POST.get('reminder_date')
-        
-        if new_status in dict(Application.STATUS_CHOICES):
-            application.status = new_status
-            application.notes = notes
-            
-            if reminder_date:
-                try:
-                    from datetime import datetime
-                    application.reminder_date = datetime.strptime(reminder_date, '%Y-%m-%d').date()
-                except ValueError:
-                    pass
-            
-            application.save()
-            messages.success(request, 'Статус заявки обновлен')
-        
-        return redirect('my_applications')
-    
-    context = {
-        'application': application,
-        'status_choices': Application.STATUS_CHOICES
-    }
-    return render(request, 'scraping/update_application.html', context)
 
 
 def analytics_dashboard_view(request):
@@ -275,6 +309,37 @@ def trigger_scraping_view(request):
     return redirect('analytics_dashboard')
 
 
+def export_jobs_csv(request):
+    """Export jobs to CSV format"""
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="jobs_export.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow([
+        'Title', 'Company', 'Location', 'Salary Min', 'Salary Max', 
+        'Remote Work', 'Experience Level', 'Source', 'Created Date', 'Description'
+    ])
+    
+    # Экспортируем новые вакансии
+    jobs = Job.objects.filter(is_active=True).select_related('company')
+    
+    for job in jobs:
+        writer.writerow([
+            job.title,
+            job.company_name,
+            job.location,
+            job.salary_min or '',
+            job.salary_max or '',
+            'Yes' if job.is_remote else 'No',
+            job.get_experience_level_display(),
+            job.get_source_site_display(),
+            job.created_at.strftime('%Y-%m-%d'),
+            job.description[:500] + '...' if len(job.description) > 500 else job.description
+        ])
+    
+    return response
+
+
 # Старые views для обратной совместимости
 def list_view(request):
     """Старый view для списка вакансий - редирект на новый"""
@@ -355,173 +420,4 @@ def parsed_jobs_list_view(request):
         'total_jobs': jobs.count(),
         'page_obj': page_obj,
     }
-    return render(request, 'scraping/parsed_jobs_list.html', context)
-
-
-@login_required
-def scraper_management_view(request):
-    """Manage scrapers and view their status"""
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        scraper_id = request.POST.get('scraper_id')
-        
-        if action == 'run' and scraper_id:
-            scraper = get_object_or_404(Scraper, id=scraper_id)
-            scraper.run()
-            messages.success(request, f'Started scraping with {scraper.name}')
-        elif action == 'run_all':
-            scrape_all_sources.delay()
-            messages.success(request, 'Started scraping from all sources')
-        
-        return redirect('scraping:scraper_management')
-    
-    # Get scraper statistics
-    scrapers = Scraper.objects.all()
-    total_jobs = Job.objects.count()
-    active_jobs = Job.objects.filter(is_active=True).count()
-    jobs_today = Job.objects.filter(
-        created_at__date=timezone.now().date()
-    ).count()
-    
-    context = {
-        'scrapers': scrapers,
-        'total_jobs': total_jobs,
-        'active_jobs': active_jobs,
-        'jobs_today': jobs_today
-    }
-    return render(request, 'scraping/scraper_management.html', context)
-
-
-@login_required
-def export_jobs_csv(request):
-    """Export jobs to CSV"""
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="jobs.csv"'
-    
-    writer = csv.writer(response)
-    writer.writerow([
-        'Title', 'Company', 'Location', 'Description', 
-        'Requirements', 'Salary', 'Job Type', 'Experience Level',
-        'Education', 'Employment Type', 'Remote', 'Source',
-        'Created At', 'Status'
-    ])
-    
-    jobs = Job.objects.filter(is_active=True).select_related('company')
-    
-    for job in jobs:
-        writer.writerow([
-            job.title,
-            job.company_name,
-            job.location,
-            job.description,
-            job.requirements,
-            job.salary,
-            job.job_type,
-            job.experience_level,
-            job.education,
-            job.employment_type,
-            'Yes' if job.remote else 'No',
-            job.source,
-            job.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            job.status
-        ])
-    
-    return response
-
-
-@login_required
-def export_jobs_excel(request):
-    """Export jobs to Excel"""
-    jobs = Job.objects.filter(is_active=True).select_related('company')
-    
-    data = []
-    for job in jobs:
-        data.append({
-            'Title': job.title,
-            'Company': job.company_name,
-            'Location': job.location,
-            'Description': job.description,
-            'Requirements': job.requirements,
-            'Salary': job.salary,
-            'Job Type': job.job_type,
-            'Experience Level': job.experience_level,
-            'Education': job.education,
-            'Employment Type': job.employment_type,
-            'Remote': 'Yes' if job.remote else 'No',
-            'Source': job.source,
-            'Created At': job.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'Status': job.status
-        })
-    
-    df = pd.DataFrame(data)
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, sheet_name='Jobs', index=False)
-    
-    output.seek(0)
-    response = HttpResponse(
-        output.read(),
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
-    response['Content-Disposition'] = 'attachment; filename="jobs.xlsx"'
-    
-    return response
-
-
-def export_analytics_report(request):
-    """Export comprehensive analytics report to Excel"""
-    # Get analytics data
-    total_jobs = ParsedJob.objects.count()
-    remote_jobs = ParsedJob.objects.filter(remote_work=True).count()
-    
-    from django.db.models import Min, Max
-    salary_stats = ParsedJob.objects.filter(
-        salary_from__isnull=False
-    ).aggregate(
-        avg_salary=Avg('salary_from'),
-        min_salary=Min('salary_from'),
-        max_salary=Max('salary_from')
-    )
-    
-    top_companies = ParsedCompany.objects.annotate(
-        job_count=Count('parsedjob')
-    ).order_by('-job_count')[:20]
-    
-    location_stats = ParsedJob.objects.values('location').annotate(
-        count=Count('id')
-    ).order_by('-count')[:20]
-    
-    # Create Excel file with multiple sheets
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        # Summary sheet
-        summary_data = {
-            'Metric': ['Total Jobs', 'Remote Jobs', 'Remote Percentage', 'Average Salary', 'Min Salary', 'Max Salary'],
-            'Value': [
-                total_jobs,
-                remote_jobs,
-                f"{(remote_jobs / total_jobs * 100):.1f}%" if total_jobs > 0 else "0%",
-                f"€{salary_stats['avg_salary']:.0f}" if salary_stats['avg_salary'] else "N/A",
-                f"€{salary_stats['min_salary']:.0f}" if salary_stats['min_salary'] else "N/A",
-                f"€{salary_stats['max_salary']:.0f}" if salary_stats['max_salary'] else "N/A"
-            ]
-        }
-        pd.DataFrame(summary_data).to_excel(writer, sheet_name='Summary', index=False)
-        
-        # Top companies sheet
-        companies_data = [{'Company': c.name, 'Job Count': c.job_count} for c in top_companies]
-        pd.DataFrame(companies_data).to_excel(writer, sheet_name='Top Companies', index=False)
-        
-        # Top locations sheet
-        locations_data = [{'Location': l['location'], 'Job Count': l['count']} for l in location_stats]
-        pd.DataFrame(locations_data).to_excel(writer, sheet_name='Top Locations', index=False)
-    
-    output.seek(0)
-    
-    response = HttpResponse(
-        output.getvalue(),
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
-    response['Content-Disposition'] = 'attachment; filename="analytics_report.xlsx"'
-    
-    return response
+    return render(request, 'scraping/parsed_jobs_list.html', context) 
