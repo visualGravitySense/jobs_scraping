@@ -14,6 +14,9 @@ import json
 import csv
 import pandas as pd
 from io import BytesIO
+import xlsxwriter
+from datetime import datetime
+from django.views.generic import ListView, DetailView
 
 from .models import (
     Vacancy, ParsedJob, ParsedCompany, Job, Company, 
@@ -23,6 +26,8 @@ from .forms import FindForm, ParsedJobFilterForm
 from .scrapers.linkedin_scraper import LinkedInScraper
 from .services import JobAnalyticsService, NotificationService
 from .tasks import scrape_all_sources, calculate_job_scores
+from .scrapers.cv_ee_scraper import CVeeScraper
+from .scrapers.cv_ee_selenium_scraper import CVeeSeleniumScraper
 
 
 # Create your views here.
@@ -358,38 +363,110 @@ def parsed_jobs_list_view(request):
     return render(request, 'scraping/parsed_jobs_list.html', context)
 
 
-@login_required
-def scraper_management_view(request):
-    """Manage scrapers and view their status"""
-    if request.method == 'POST':
+class JobListView(ListView):
+    model = Job
+    template_name = 'scraping/job_list.html'
+    context_object_name = 'jobs'
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = Job.objects.filter(is_active=True).select_related('company')
+        
+        # Search
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(title__icontains=search_query) |
+                Q(company_name__icontains=search_query) |
+                Q(description__icontains=search_query)
+            )
+        
+        # Source filter
+        source = self.request.GET.get('source', '')
+        if source:
+            queryset = queryset.filter(source_site=source)
+        
+        # Sort
+        sort = self.request.GET.get('sort', '-created_at')
+        if sort == 'salary':
+            queryset = queryset.order_by('-salary_min')
+        elif sort == 'date':
+            queryset = queryset.order_by('-posted_date')
+        else:
+            queryset = queryset.order_by('-created_at')
+        
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('search', '')
+        context['source'] = self.request.GET.get('source', '')
+        context['sort'] = self.request.GET.get('sort', '-created_at')
+        context['sources'] = Job.objects.values_list('source_site', flat=True).distinct()
+        return context
+
+
+class JobDetailView(DetailView):
+    model = Job
+    template_name = 'scraping/job_detail.html'
+    context_object_name = 'job'
+
+    def get_queryset(self):
+        return Job.objects.select_related('company')
+
+
+class ScraperManagementView(LoginRequiredMixin, ListView):
+    model = Scraper
+    template_name = 'scraping/scraper_management.html'
+    context_object_name = 'scrapers'
+
+    def post(self, request, *args, **kwargs):
         action = request.POST.get('action')
         scraper_id = request.POST.get('scraper_id')
-        
-        if action == 'run' and scraper_id:
-            scraper = get_object_or_404(Scraper, id=scraper_id)
-            scraper.run()
-            messages.success(request, f'Started scraping with {scraper.name}')
-        elif action == 'run_all':
-            scrape_all_sources.delay()
-            messages.success(request, 'Started scraping from all sources')
-        
+
+        if action == "run_all":
+            scrapers = Scraper.objects.all()
+            total = 0
+            for scraper in scrapers:
+                if scraper.source == 'cv_ee':
+                    cv_scraper = CVeeSeleniumScraper()
+                    jobs_created = cv_scraper.scrape_jobs()
+                    total += jobs_created
+                    scraper.status = 'completed'
+                    scraper.last_run = timezone.now()
+                    scraper.save()
+                # Здесь будет cvkeskus.ee
+            messages.success(request, f'All scrapers finished. Total jobs scraped: {total}')
+            return redirect('scraping:scraper_management')
+
+        if not scraper_id or not action:
+            messages.error(request, 'Invalid request')
+            return redirect('scraping:scraper_management')
+
+        try:
+            scraper = Scraper.objects.get(id=scraper_id)
+            if action == 'start':
+                if scraper.source == 'cv_ee':
+                    scraper.status = 'running'
+                    scraper.save()
+                    cv_scraper = CVeeSeleniumScraper()
+                    jobs_created = cv_scraper.scrape_jobs()
+                    scraper.status = 'completed'
+                    scraper.last_run = timezone.now()
+                    scraper.save()
+                    messages.success(request, f'Successfully scraped {jobs_created} jobs from cv.ee')
+                # Здесь будет cvkeskus.ee
+                else:
+                    messages.error(request, f'Scraper for {scraper.source} is not implemented yet')
+            elif action == 'stop':
+                scraper.status = 'idle'
+                scraper.save()
+                messages.info(request, f'Stopping scraper for {scraper.source}')
+            else:
+                messages.error(request, 'Invalid action')
+        except Scraper.DoesNotExist:
+            messages.error(request, 'Scraper not found')
         return redirect('scraping:scraper_management')
-    
-    # Get scraper statistics
-    scrapers = Scraper.objects.all()
-    total_jobs = Job.objects.count()
-    active_jobs = Job.objects.filter(is_active=True).count()
-    jobs_today = Job.objects.filter(
-        created_at__date=timezone.now().date()
-    ).count()
-    
-    context = {
-        'scrapers': scrapers,
-        'total_jobs': total_jobs,
-        'active_jobs': active_jobs,
-        'jobs_today': jobs_today
-    }
-    return render(request, 'scraping/scraper_management.html', context)
 
 
 @login_required
@@ -525,3 +602,61 @@ def export_analytics_report(request):
     response['Content-Disposition'] = 'attachment; filename="analytics_report.xlsx"'
     
     return response
+
+
+def export_jobs(request):
+    format_type = request.GET.get('format', 'csv')
+    queryset = Job.objects.filter(is_active=True).select_related('company')
+    
+    if format_type == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="jobs_{datetime.now().strftime("%Y%m%d")}.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow(['Title', 'Company', 'Location', 'Salary', 'Posted Date', 'Source'])
+        
+        for job in queryset:
+            salary = f"{job.salary_min}-{job.salary_max} {job.salary_currency}" if job.salary_min and job.salary_max else "Not specified"
+            writer.writerow([
+                job.title,
+                job.company_name,
+                job.location,
+                salary,
+                job.posted_date.strftime('%Y-%m-%d'),
+                job.source_site
+            ])
+        
+        return response
+    
+    elif format_type == 'excel':
+        output = BytesIO()
+        workbook = xlsxwriter.Workbook(output)
+        worksheet = workbook.add_worksheet()
+        
+        # Add headers
+        headers = ['Title', 'Company', 'Location', 'Salary', 'Posted Date', 'Source']
+        for col, header in enumerate(headers):
+            worksheet.write(0, col, header)
+        
+        # Add data
+        for row, job in enumerate(queryset, start=1):
+            salary = f"{job.salary_min}-{job.salary_max} {job.salary_currency}" if job.salary_min and job.salary_max else "Not specified"
+            worksheet.write(row, 0, job.title)
+            worksheet.write(row, 1, job.company_name)
+            worksheet.write(row, 2, job.location)
+            worksheet.write(row, 3, salary)
+            worksheet.write(row, 4, job.posted_date.strftime('%Y-%m-%d'))
+            worksheet.write(row, 5, job.source_site)
+        
+        workbook.close()
+        output.seek(0)
+        
+        response = HttpResponse(
+            output.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="jobs_{datetime.now().strftime("%Y%m%d")}.xlsx"'
+        
+        return response
+    
+    return HttpResponse('Invalid format', status=400)

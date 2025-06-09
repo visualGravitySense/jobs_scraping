@@ -4,20 +4,18 @@ from typing import List, Dict, Optional
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
+from django.utils import timezone
+from ..models import Job, Company
 
 logger = logging.getLogger(__name__)
 
 class CVeeScraper:
-    BASE_URL = "https://www.cv.ee/et/vacancies"
-    HEADERS = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'et-EE,et;q=0.9,en-US;q=0.8,en;q=0.7',
-    }
-
-    def __init__(self, session: Optional[requests.Session] = None):
-        self.session = session or requests.Session()
-        self.session.headers.update(self.HEADERS)
+    BASE_URL = 'https://www.cv.ee/et/vacancies'
+    
+    def __init__(self):
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
 
     def _get_salary_range(self, salary_text: str) -> tuple:
         """Extract salary range from text"""
@@ -91,7 +89,7 @@ class CVeeScraper:
                 logger.info(f"Searching jobs with URL: {url}")
                 logger.info(f"Request parameters: {params}")
                 
-                response = self.session.get(self.BASE_URL, params=params)
+                response = requests.get(self.BASE_URL, params=params, headers=self.headers)
                 logger.info(f"Response status code: {response.status_code}")
                 logger.info(f"Response headers: {dict(response.headers)}")
                 logger.info(f"Response URL: {response.url}")
@@ -129,7 +127,7 @@ class CVeeScraper:
     def get_job_details(self, job_url: str) -> Dict:
         """Get detailed information about a specific job"""
         try:
-            response = self.session.get(job_url)
+            response = requests.get(job_url, headers=self.headers)
             response.raise_for_status()
             
             soup = BeautifulSoup(response.text, 'html.parser')
@@ -160,4 +158,79 @@ class CVeeScraper:
             
         except Exception as e:
             logger.error(f"Error getting job details from {job_url}: {str(e)}")
-            return None 
+            return None
+
+    def scrape_jobs(self):
+        try:
+            response = requests.get(self.BASE_URL, headers=self.headers)
+            response.raise_for_status()
+            
+            soup = BeautifulSoup(response.text, 'html.parser')
+            job_cards = soup.find_all('li', class_='vacancies-list__item')
+            
+            jobs_created = 0
+            for card in job_cards:
+                try:
+                    # Title and URL
+                    title_tag = card.find('a', class_='vacancy-item__title')
+                    title = title_tag.text.strip() if title_tag else ''
+                    job_url = title_tag['href'] if title_tag else ''
+                    if job_url and not job_url.startswith('http'):
+                        job_url = f"https://www.cv.ee{job_url}"
+
+                    # Company (ищем в info-secondary или других блоках)
+                    company_name = ''
+                    info_secondary = card.find('div', class_='vacancy-item__info-secondary')
+                    if info_secondary:
+                        company_name = info_secondary.text.strip().split('\n')[0]
+
+                    # Location (может быть в info или info-secondary)
+                    location = ''
+                    info = card.find('div', class_='vacancy-item__info')
+                    if info:
+                        location = info.text.strip().split('\n')[0]
+
+                    # Description (body)
+                    description = ''
+                    body = card.find('div', class_='vacancy-item__body')
+                    if body:
+                        description = body.text.strip()
+
+                    # Salary (если есть)
+                    salary = ''
+                    # Можно добавить парсинг зарплаты, если найдете где она в html
+
+                    # Get or create company
+                    company, _ = Company.objects.get_or_create(
+                        name=company_name or 'Unknown',
+                        defaults={
+                            'location': location,
+                            'size': 'small'
+                        }
+                    )
+
+                    job, created = Job.objects.get_or_create(
+                        source_url=job_url,
+                        defaults={
+                            'title': title,
+                            'company': company,
+                            'company_name': company_name,
+                            'location': location,
+                            'description': description,
+                            'salary_min': None,
+                            'salary_max': None,
+                            'salary_currency': 'EUR',
+                            'source_site': 'cv_ee',
+                            'posted_date': timezone.now(),
+                            'is_active': True
+                        }
+                    )
+                    if created:
+                        jobs_created += 1
+                except Exception as e:
+                    logger.error(f"Error processing job card: {e}")
+                    continue
+            return jobs_created
+        except Exception as e:
+            logger.error(f"Error scraping cv.ee: {e}")
+            return 0 

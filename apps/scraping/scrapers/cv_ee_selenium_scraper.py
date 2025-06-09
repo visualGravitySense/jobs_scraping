@@ -3,40 +3,168 @@ import json
 import logging
 from typing import List, Dict, Optional
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
 from webdriver_manager.chrome import ChromeDriverManager
-import undetected_chromedriver as uc
+from bs4 import BeautifulSoup
+from django.utils import timezone
+from ..models import Job, Company
 
 logger = logging.getLogger(__name__)
 
 class CVeeSeleniumScraper:
-    BASE_URL = "https://www.cv.ee/et/search"
+    BASE_URL = 'https://cv.ee/search'
 
-    def __init__(self, headless: bool = True):
-        """
-        Инициализация Selenium-парсера для cv.ee.
-        :param headless: Запускать браузер в фоновом режиме (без GUI).
-        """
-        chrome_options = uc.ChromeOptions()
-        if headless:
-            chrome_options.add_argument("--headless=new")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--window-size=1920,1080")
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+    def __init__(self):
+        chrome_options = Options()
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--disable-blink-features=AutomationControlled')
         chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
         chrome_options.add_experimental_option('useAutomationExtension', False)
         
-        # Использование undetected-chromedriver для обхода защиты
-        self.driver = uc.Chrome(options=chrome_options)
+        service = Service(ChromeDriverManager().install())
+        self.driver = webdriver.Chrome(service=service, options=chrome_options)
         self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-        self.wait = WebDriverWait(self.driver, 15)
+
+    def scrape_jobs(self):
+        try:
+            self.driver.get(self.BASE_URL)
+            print(f"Загружена страница: {self.BASE_URL}")
+            
+            # Ждем загрузки страницы
+            time.sleep(8)
+            
+            # Прокручиваем страницу несколько раз для загрузки вакансий
+            for i in range(3):
+                self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                time.sleep(2)
+                print(f"Прокрутка {i+1}/3 выполнена")
+            
+            # Прокручиваем обратно наверх
+            self.driver.execute_script("window.scrollTo(0, 0);")
+            time.sleep(2)
+            
+            soup = BeautifulSoup(self.driver.page_source, 'html.parser')
+            
+            # Пробуем разные селекторы для поиска вакансий
+            job_cards = soup.find_all('li', class_=lambda x: x and 'vacancies-list__item' in x)
+            if not job_cards:
+                job_cards = soup.find_all('div', class_=lambda x: x and 'vacancy-item' in x)
+            if not job_cards:
+                job_cards = soup.find_all('article', class_=lambda x: x and 'vacancy' in x)
+            
+            # Новые селекторы для актуальной структуры cv.ee
+            if not job_cards:
+                job_cards = soup.find_all('div', class_=lambda x: x and 'job-item' in x)
+            if not job_cards:
+                job_cards = soup.find_all('div', attrs={'data-testid': 'job-card'})
+            if not job_cards:
+                # Ищем по ссылкам на вакансии
+                job_links = soup.find_all('a', href=lambda x: x and '/vacancy/' in x)
+                job_cards = [link.find_parent() for link in job_links if link.find_parent()]
+            
+            print(f"Найдено вакансий: {len(job_cards)}")
+            
+            jobs_created = 0
+            for card in job_cards:
+                try:
+                    # Title
+                    title_tag = card.find('a', class_=lambda x: x and 'vacancy-item__title' in x)
+                    if not title_tag:
+                        title_tag = card.find('a', href=lambda x: x and '/vacancy/' in x)
+                    if not title_tag:
+                        title_tag = card.find('h3')
+                        if title_tag:
+                            title_tag = title_tag.find('a')
+                    
+                    title = title_tag.text.strip() if title_tag else ''
+                    job_url = title_tag['href'] if title_tag else ''
+                    
+                    if job_url and not job_url.startswith('http'):
+                        job_url = f"https://cv.ee{job_url}"
+
+                    # Company
+                    company_name = ''
+                    company_link = card.find('a', href=lambda x: x and 'employer' in x)
+                    if company_link:
+                        company_name = company_link.text.strip()
+                    else:
+                        # Альтернативный поиск компании
+                        company_tag = card.find('span', class_=lambda x: x and 'company' in x)
+                        if company_tag:
+                            company_name = company_tag.text.strip()
+
+                    # Location
+                    location = ''
+                    location_div = card.find('div', class_=lambda x: x and 'vacancy-item__locations' in x)
+                    if location_div:
+                        location_text = location_div.get_text(strip=True)
+                        location = location_text.replace('...', '').strip()
+                    else:
+                        # Альтернативный поиск локации
+                        location_tag = card.find('span', class_=lambda x: x and 'location' in x)
+                        if location_tag:
+                            location = location_tag.text.strip()
+
+                    # Description
+                    description = ''
+                    body = card.find('div', class_=lambda x: x and 'vacancy-item__body' in x)
+                    if body:
+                        description = body.text.strip()
+                    else:
+                        # Ищем описание в других тегах
+                        desc_tag = card.find('p')
+                        if desc_tag:
+                            description = desc_tag.text.strip()
+
+                    # Пропускаем вакансии без названия
+                    if not title:
+                        continue
+
+                    # Создаем или получаем компанию
+                    company, _ = Company.objects.get_or_create(
+                        name=company_name or 'Unknown',
+                        defaults={'location': location, 'size': 'small'}
+                    )
+
+                    # Создаем вакансию
+                    job, created = Job.objects.get_or_create(
+                        source_url=job_url,
+                        defaults={
+                            'title': title,
+                            'company': company,
+                            'company_name': company_name,
+                            'location': location,
+                            'description': description,
+                            'salary_min': None,
+                            'salary_max': None,
+                            'salary_currency': 'EUR',
+                            'source_site': 'cv_ee',
+                            'posted_date': timezone.now(),
+                            'is_active': True
+                        }
+                    )
+                    if created:
+                        jobs_created += 1
+                        print(f"Создана вакансия: {title} в {company_name}")
+                        
+                except Exception as e:
+                    print(f"Ошибка обработки вакансии: {e}")
+                    continue
+                    
+            return jobs_created
+            
+        except Exception as e:
+            print(f"Ошибка скрапинга cv.ee: {e}")
+            return 0
+        finally:
+            self.driver.quit()
 
     def _wait_and_find_element(self, by: By, value: str, timeout: int = 10):
         """Ожидание и поиск элемента с обработкой ошибок."""
