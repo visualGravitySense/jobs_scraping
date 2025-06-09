@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+
+{% block title %}Analytics Dashboard - Job Scraper{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="mb-0">Job Market Analytics Dashboard</h1>
+            <div class="btn-group" role="group">
+                <a href="{% url 'parsed_jobs_list' %}" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-list"></i> View Jobs
+                </a>
+                <a href="{% url 'export_analytics_report' %}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-file-excel"></i> Export Report
+                </a>
+            </div>
+        </div>
+        
+        <!-- Key Metrics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-white bg-primary">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Jobs</h5>
+                        <h2 class="card-text">{{ total_jobs }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-success">
+                    <div class="card-body">
+                        <h5 class="card-title">Remote Jobs</h5>
+                        <h2 class="card-text">{{ remote_jobs }}</h2>
+                        <small>{{ remote_percentage }}% of total</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-info">
+                    <div class="card-body">
+                        <h5 class="card-title">Average Salary</h5>
+                        <h2 class="card-text">
+                            {% if salary_stats.avg_salary %}
+                                €{{ salary_stats.avg_salary|floatformat:0 }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-warning">
+                    <div class="card-body">
+                        <h5 class="card-title">Companies</h5>
+                        <h2 class="card-text">{{ top_companies|length }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts Row -->
+        <div class="row mb-4">
+            <!-- Jobs Over Time Chart -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Jobs Posted Over Time (Last 30 Days)</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="jobsOverTimeChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Salary Distribution Chart -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Salary Distribution</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="salaryDistributionChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tables Row -->
+        <div class="row">
+            <!-- Top Companies -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Top Companies by Job Count</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Company</th>
+                                        <th>Jobs</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for company in top_companies %}
+                                    <tr>
+                                        <td>{{ company.name }}</td>
+                                        <td>{{ company.job_count }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="2">No data available</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Top Locations -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Top Locations by Job Count</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Location</th>
+                                        <th>Jobs</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for location in location_stats %}
+                                    <tr>
+                                        <td>{{ location.location }}</td>
+                                        <td>{{ location.count }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="2">No data available</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Salary Statistics -->
+        {% if salary_stats.avg_salary %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Salary Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <h6>Minimum Salary</h6>
+                                <p class="h4 text-success">€{{ salary_stats.min_salary|floatformat:0 }}</p>
+                            </div>
+                            <div class="col-md-4">
+                                <h6>Average Salary</h6>
+                                <p class="h4 text-info">€{{ salary_stats.avg_salary|floatformat:0 }}</p>
+                            </div>
+                            <div class="col-md-4">
+                                <h6>Maximum Salary</h6>
+                                <p class="h4 text-warning">€{{ salary_stats.max_salary|floatformat:0 }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Jobs Over Time Chart
+const jobsOverTimeData = {{ jobs_over_time_json|safe }};
+const jobsOverTimeCtx = document.getElementById('jobsOverTimeChart').getContext('2d');
+new Chart(jobsOverTimeCtx, {
+    type: 'line',
+    data: {
+        labels: jobsOverTimeData.map(item => item.day),
+        datasets: [{
+            label: 'Jobs Posted',
+            data: jobsOverTimeData.map(item => item.count),
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Salary Distribution Chart
+const salaryRangesData = {{ salary_ranges_json|safe }};
+const salaryDistributionCtx = document.getElementById('salaryDistributionChart').getContext('2d');
+new Chart(salaryDistributionCtx, {
+    type: 'doughnut',
+    data: {
+        labels: salaryRangesData.map(item => item.range),
+        datasets: [{
+            data: salaryRangesData.map(item => item.count),
+            backgroundColor: [
+                '#FF6384',
+                '#36A2EB',
+                '#FFCE56',
+                '#4BC0C0',
+                '#9966FF'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+</script>
+{% endblock %} 

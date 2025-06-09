@@ -1,18 +1,12 @@
 from django.urls import path
-from .views import (
-    home_view, list_view, v_detail, v_create, v_update, v_delete,
-    LinkedInAuthView, LinkedInCallbackView
-)
+from . import views
+
+app_name = 'scraping'
 
 urlpatterns = [
-    path('', home_view, name='home'),
-    path('list/', list_view, name='list'),
-    path('detail/<int:pk>/', v_detail, name='v_detail'),
-    path('create/', v_create, name='v_create'),
-    path('update/<int:pk>/', v_update, name='v_update'),
-    path('delete/<int:pk>/', v_delete, name='v_delete'),
-    
-    # LinkedIn authentication URLs
-    path('linkedin/auth/', LinkedInAuthView.as_view(), name='linkedin_auth'),
-    path('linkedin/callback/', LinkedInCallbackView.as_view(), name='linkedin_callback'),
+    path('', views.job_list_view, name='job_list'),
+    path('jobs/<int:job_id>/', views.job_detail_view, name='job_detail'),
+    path('scrapers/', views.scraper_management_view, name='scraper_management'),
+    path('export/csv/', views.export_jobs_csv, name='export_csv'),
+    path('export/excel/', views.export_jobs_excel, name='export_excel'),
 ] 

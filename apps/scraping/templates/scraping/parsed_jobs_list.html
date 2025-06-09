@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}Parsed Jobs - Job Scraper{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Available Parsed Jobs</h1>
+        
+        <!-- Filter Form -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Filter & Search Jobs</h5>
+            </div>
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-6">
+                        {{ form.search.label_tag }}
+                        {{ form.search }}
+                    </div>
+                    <div class="col-md-3">
+                        {{ form.company.label_tag }}
+                        {{ form.company }}
+                    </div>
+                    <div class="col-md-3">
+                        {{ form.location.label_tag }}
+                        {{ form.location }}
+                    </div>
+                    <div class="col-md-3">
+                        {{ form.salary_from.label_tag }}
+                        {{ form.salary_from }}
+                    </div>
+                    <div class="col-md-3">
+                        {{ form.salary_to.label_tag }}
+                        {{ form.salary_to }}
+                    </div>
+                    <div class="col-md-3">
+                        {{ form.remote_work.label_tag }}
+                        {{ form.remote_work }}
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">Filter</button>
+                        <a href="{% url 'parsed_jobs_list' %}" class="btn btn-secondary">Clear</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Job Count and Export Buttons -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <p class="mb-0">
+                <strong>{{ total_jobs }}</strong> job{{ total_jobs|pluralize }} found
+                {% if page_obj.paginator.count != total_jobs %}
+                    (showing {{ page_obj.start_index }}-{{ page_obj.end_index }})
+                {% endif %}
+            </p>
+            <div class="btn-group" role="group">
+                <a href="{% url 'analytics_dashboard' %}" class="btn btn-info btn-sm">
+                    <i class="fas fa-chart-bar"></i> Analytics
+                </a>
+                <a href="{% url 'export_jobs_csv' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm">
+                    <i class="fas fa-file-csv"></i> Export CSV
+                </a>
+                <a href="{% url 'export_jobs_excel' %}?{{ request.GET.urlencode }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-file-excel"></i> Export Excel
+                </a>
+            </div>
+        </div>
+        
+        <!-- Jobs List -->
+        {% if object_list %}
+            {% for job in object_list %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ job.title }}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">{{ job.company }}</h6>
+                        <p class="card-text">
+                            <strong>Location:</strong> {{ job.location }}<br>
+                            <strong>Salary:</strong>
+                            {% if job.salary_from and job.salary_to %}
+                                {{ job.salary_from }} - {{ job.salary_to }}
+                            {% elif job.salary_from %}
+                                From {{ job.salary_from }}
+                            {% elif job.salary_to %}
+                                Up to {{ job.salary_to }}
+                            {% else %}
+                                Not specified
+                            {% endif %}<br>
+                            <strong>Remote:</strong> {{ job.remote_work|yesno:"Yes,No" }}<br>
+                            <strong>Publish Date:</strong> {{ job.publish_date }}<br>
+                            <strong>Expiration Date:</strong> {{ job.expiration_date }}<br>
+                        </p>
+                        <p>{{ job.description|default:"No description"|truncatewords:50 }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+            
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="Job pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page=1">First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.paginator.num_pages }}">Last</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="alert alert-info">
+                No parsed jobs found matching your criteria.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

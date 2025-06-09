@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}Scraper Management{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Scraper Management</h1>
+
+    <!-- Scraper Status -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Scraper Status</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Scraper</th>
+                            <th>Status</th>
+                            <th>Last Run</th>
+                            <th>Jobs Found</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for scraper in scrapers %}
+                        <tr>
+                            <td>{{ scraper.name }}</td>
+                            <td>
+                                <span class="badge bg-{{ scraper.status|lower }}">{{ scraper.status }}</span>
+                            </td>
+                            <td>{{ scraper.last_run|default:"Never" }}</td>
+                            <td>{{ scraper.jobs_found }}</td>
+                            <td>
+                                <form method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="scraper_id" value="{{ scraper.id }}">
+                                    <button type="submit" name="action" value="run" class="btn btn-primary btn-sm">Run Now</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Run All Scrapers -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Bulk Actions</h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" name="action" value="run_all" class="btn btn-success">Run All Scrapers</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scraping Statistics -->
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Total Jobs</h5>
+                    <h2 class="card-text">{{ total_jobs }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Active Jobs</h5>
+                    <h2 class="card-text">{{ active_jobs }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Jobs Today</h5>
+                    <h2 class="card-text">{{ jobs_today }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

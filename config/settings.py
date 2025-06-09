@@ -49,6 +49,8 @@ INSTALLED_APPS = [
 
     # Third party apps
     'django_celery_beat',
+    'django_celery_results',
+    'django_redis',
 
     # MY Apps
     'apps.scraping',
@@ -129,6 +131,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+
+# Media files
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 AUTH_USER_MODEL = 'accounts.MyUser'
 
@@ -152,15 +160,93 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
-# Celery Beat Schedule
-CELERY_BEAT_SCHEDULE = {
-    'scrape-cv-ee-jobs': {
-        'task': 'apps.scraping.tasks.scrape_cv_ee_jobs',
-        'schedule': 3600.0,  # Run every hour
+# Telegram Bot Configuration
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
+
+# Logging Configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
     },
-    'scrape-linkedin-jobs': {
-        'task': 'apps.scraping.tasks.scrape_linkedin_jobs',
-        'schedule': 3600.0,  # Run every hour
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'django.log',
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'apps.scraping': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
+
+# Cache Configuration
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
+
+# Session Configuration
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+
+# Celery Beat Schedule (moved to celery.py for better organization)
+# The actual schedule is now defined in config/celery.py
+
+# Scraping Configuration
+SCRAPING_INTERVAL = 3600  # 1 hour
+MAX_RETRIES = 3
+RETRY_DELAY = 300  # 5 minutes
+
+# Job Status Configuration
+JOB_STATUS_CHOICES = [
+    ('active', 'Active'),
+    ('expired', 'Expired'),
+    ('filled', 'Filled'),
+    ('draft', 'Draft'),
+]
+
+# Scraper Configuration
+SCRAPER_CONFIG = {
+    'cv_ee': {
+        'base_url': 'https://www.cv.ee',
+        'search_url': 'https://www.cv.ee/toopakkumised',
+        'max_pages': 10,
+    },
+    'linkedin': {
+        'base_url': 'https://www.linkedin.com',
+        'search_url': 'https://www.linkedin.com/jobs/search',
+        'max_pages': 5,
     },
 }

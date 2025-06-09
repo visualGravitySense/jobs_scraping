@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ job.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h1 class="card-title">{{ job.title }}</h1>
+                    <h6 class="card-subtitle mb-3 text-muted">{{ job.company_name }}</h6>
+                    
+                    <div class="mb-4">
+                        <span class="badge bg-{{ job.status|lower }} me-2">{{ job.status }}</span>
+                        <span class="text-muted">Posted: {{ job.created_at|date:"M d, Y" }}</span>
+                        <span class="text-muted ms-3">Source: {{ job.source }}</span>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>Description</h5>
+                        <div class="card-text">{{ job.description|linebreaks }}</div>
+                    </div>
+
+                    {% if job.requirements %}
+                    <div class="mb-4">
+                        <h5>Requirements</h5>
+                        <div class="card-text">{{ job.requirements|linebreaks }}</div>
+                    </div>
+                    {% endif %}
+
+                    {% if job.salary %}
+                    <div class="mb-4">
+                        <h5>Salary</h5>
+                        <div class="card-text">{{ job.salary }}</div>
+                    </div>
+                    {% endif %}
+
+                    {% if job.location %}
+                    <div class="mb-4">
+                        <h5>Location</h5>
+                        <div class="card-text">{{ job.location }}</div>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex gap-2">
+                        <a href="{{ job.url }}" target="_blank" class="btn btn-primary">Apply on {{ job.source }}</a>
+                        <a href="{% url 'scraping:job_list' %}" class="btn btn-secondary">Back to List</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Job Details</h5>
+                    <ul class="list-group list-group-flush">
+                        {% if job.job_type %}
+                        <li class="list-group-item">
+                            <strong>Type:</strong> {{ job.job_type }}
+                        </li>
+                        {% endif %}
+                        
+                        {% if job.experience_level %}
+                        <li class="list-group-item">
+                            <strong>Experience:</strong> {{ job.experience_level }}
+                        </li>
+                        {% endif %}
+                        
+                        {% if job.education %}
+                        <li class="list-group-item">
+                            <strong>Education:</strong> {{ job.education }}
+                        </li>
+                        {% endif %}
+                        
+                        {% if job.employment_type %}
+                        <li class="list-group-item">
+                            <strong>Employment:</strong> {{ job.employment_type }}
+                        </li>
+                        {% endif %}
+                        
+                        {% if job.remote %}
+                        <li class="list-group-item">
+                            <strong>Remote:</strong> {{ job.remote|yesno:"Yes,No" }}
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+
+            {% if job.skills.all %}
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Required Skills</h5>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for skill in job.skills.all %}
+                        <span class="badge bg-info">{{ skill.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 
