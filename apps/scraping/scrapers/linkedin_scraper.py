@@ -47,18 +47,48 @@ class LinkedInScraper:
     def _parse_job_card(self, job_card) -> Dict:
         """Parse a single job card from LinkedIn"""
         try:
-            title = job_card.find('h3', class_='base-search-card__title').text.strip()
-            company = job_card.find('h4', class_='base-search-card__subtitle').text.strip()
-            location = job_card.find('span', class_='job-search-card__location').text.strip()
+            # Попробуем разные селекторы для заголовка
+            title_element = (
+                job_card.find('h3', class_='base-search-card__title') or
+                job_card.find('a', class_='base-card__full-link') or
+                job_card.find('h3') or
+                job_card.find('a')
+            )
+            title = title_element.get_text(strip=True) if title_element else 'Unknown Title'
+            
+            # Попробуем разные селекторы для компании
+            company_element = (
+                job_card.find('h4', class_='base-search-card__subtitle') or
+                job_card.find('a', class_='hidden-nested-link') or
+                job_card.find('h4') or
+                job_card.find('span', class_='job-search-card__subtitle-link')
+            )
+            company = company_element.get_text(strip=True) if company_element else 'Unknown Company'
+            
+            # Попробуем разные селекторы для локации
+            location_element = (
+                job_card.find('span', class_='job-search-card__location') or
+                job_card.find('div', class_='job-search-card__location') or
+                job_card.find('span', string=lambda text: text and ('Estonia' in text or 'Tallinn' in text))
+            )
+            location = location_element.get_text(strip=True) if location_element else 'Unknown Location'
             
             # Get job URL
-            job_link = job_card.find('a', class_='base-card__full-link')
-            job_url = job_link['href'] if job_link else None
+            job_link = job_card.find('a', class_='base-card__full-link') or job_card.find('a')
+            job_url = job_link.get('href') if job_link else None
+            
+            # Убедимся, что URL полный
+            if job_url and not job_url.startswith('http'):
+                job_url = 'https://www.linkedin.com' + job_url
             
             # Get salary if available
             salary_element = job_card.find('span', class_='job-search-card__salary-info')
-            salary_text = salary_element.text.strip() if salary_element else None
+            salary_text = salary_element.get_text(strip=True) if salary_element else None
             salary_min, salary_max = self._get_salary_range(salary_text) if salary_text else (None, None)
+            
+            # Попробуем получить описание из карточки
+            description_element = job_card.find('div', class_='job-search-card__snippet')
+            description = description_element.get_text(strip=True) if description_element else ''
             
             return {
                 'title': title,
@@ -67,6 +97,7 @@ class LinkedInScraper:
                 'url': job_url,
                 'salary_min': salary_min,
                 'salary_max': salary_max,
+                'description': description,
                 'source': 'linkedin'
             }
         except Exception as e:
@@ -81,22 +112,34 @@ class LinkedInScraper:
             try:
                 params = {
                     'keywords': ' '.join(keywords),
-                    'location': location,
+                    'location': location or 'Estonia',
                     'start': page * 25,  # LinkedIn shows 25 jobs per page
                 }
+                
+                logger.info(f"Searching LinkedIn page {page + 1} with params: {params}")
                 
                 response = self.session.get(self.BASE_URL, params=params)
                 response.raise_for_status()
                 
                 soup = BeautifulSoup(response.text, 'html.parser')
-                job_cards = soup.find_all('div', class_='base-card')
+                
+                # Попробуем разные селекторы для карточек вакансий
+                job_cards = (
+                    soup.find_all('div', class_='base-card') or
+                    soup.find_all('div', class_='job-search-card') or
+                    soup.find_all('li', class_='result-card') or
+                    soup.find_all('div', class_='base-search-card')
+                )
+                
+                logger.info(f"Found {len(job_cards)} job cards on page {page + 1}")
                 
                 if not job_cards:
+                    logger.warning(f"No job cards found on page {page + 1}")
                     break
                 
                 for card in job_cards:
                     job_data = self._parse_job_card(card)
-                    if job_data:
+                    if job_data and job_data.get('title') != 'Unknown Title':
                         all_jobs.append(job_data)
                 
                 # Respect rate limiting
@@ -106,6 +149,7 @@ class LinkedInScraper:
                 logger.error(f"Error searching jobs on page {page}: {str(e)}")
                 break
         
+        logger.info(f"Total jobs found: {len(all_jobs)}")
         return all_jobs
 
     def get_job_details(self, job_url: str) -> Dict:
@@ -117,29 +161,60 @@ class LinkedInScraper:
             soup = BeautifulSoup(response.text, 'html.parser')
             
             # Extract job description
-            description = soup.find('div', class_='show-more-less-html__markup')
-            description_text = description.text.strip() if description else ''
+            description_selectors = [
+                'div.show-more-less-html__markup',
+                'div.description__text',
+                'div.jobs-description-content__text',
+                'div.jobs-box__html-content'
+            ]
+            
+            description = ''
+            for selector in description_selectors:
+                desc_element = soup.select_one(selector)
+                if desc_element:
+                    description = desc_element.get_text(strip=True)
+                    break
             
             # Extract additional details
             details = {
-                'description': description_text,
+                'description': description,
                 'posted_date': None,
                 'employment_type': None,
                 'experience_level': None
             }
             
             # Try to get posting date
-            date_element = soup.find('span', class_='posted-time-ago__text')
-            if date_element:
-                details['posted_date'] = date_element.text.strip()
+            date_selectors = [
+                'span.posted-time-ago__text',
+                'time.job-posted-date',
+                'span.jobs-unified-top-card__posted-date'
+            ]
+            
+            for selector in date_selectors:
+                date_element = soup.select_one(selector)
+                if date_element:
+                    details['posted_date'] = date_element.get_text(strip=True)
+                    break
             
             # Try to get employment type
-            employment_element = soup.find('span', class_='job-criteria-item__text')
-            if employment_element:
-                details['employment_type'] = employment_element.text.strip()
+            employment_selectors = [
+                'span.job-criteria-item__text',
+                'li.jobs-unified-top-card__job-insight span'
+            ]
+            
+            for selector in employment_selectors:
+                employment_element = soup.select_one(selector)
+                if employment_element:
+                    details['employment_type'] = employment_element.get_text(strip=True)
+                    break
             
             return details
             
         except Exception as e:
             logger.error(f"Error getting job details from {job_url}: {str(e)}")
-            return None 
+            return {
+                'description': '',
+                'posted_date': None,
+                'employment_type': None,
+                'experience_level': None
+            } 
