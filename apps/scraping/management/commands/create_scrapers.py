@@ -37,10 +37,25 @@ class Command(BaseCommand):
         else:
             self.stdout.write("• Скрапер CVKeskus уже существует")
         
+        # Создаем скрапер для LinkedIn
+        scraper3, created3 = Scraper.objects.get_or_create(
+            name='LinkedIn Scraper',
+            defaults={
+                'source': 'linkedin',
+                'status': 'idle',
+                'config': {'url': 'https://www.linkedin.com/jobs/search'}
+            }
+        )
+        
+        if created3:
+            self.stdout.write("✓ Создан скрапер LinkedIn")
+        else:
+            self.stdout.write("• Скрапер LinkedIn уже существует")
+        
         # Показываем все скраперы
         all_scrapers = Scraper.objects.all()
         self.stdout.write(f"\n=== Всего скраперов в БД: {all_scrapers.count()} ===")
         for scraper in all_scrapers:
             self.stdout.write(f"- {scraper.name} ({scraper.source}) - {scraper.status}")
         
-        self.stdout.write("\n✅ Готово! Теперь скраперы будут доступны в веб-интерфейсе.") 
+        self.stdout.write("\n✅ Готово! Теперь скраперы будут доступны в веб-интерфейсе.")

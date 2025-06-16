@@ -435,6 +435,14 @@ class ScraperManagementView(LoginRequiredMixin, ListView):
                     scraper.status = 'completed'
                     scraper.last_run = timezone.now()
                     scraper.save()
+                elif scraper.source == 'linkedin':
+                    linkedin_scraper = LinkedInScraper()
+                    jobs = linkedin_scraper.search_jobs(['python', 'django', 'flask'], 'Estonia', 5)
+                    jobs_created = self._save_linkedin_jobs(jobs)
+                    total += jobs_created
+                    scraper.status = 'completed'
+                    scraper.last_run = timezone.now()
+                    scraper.save()
                 # Здесь будет cvkeskus.ee
             messages.success(request, f'All scrapers finished. Total jobs scraped: {total}')
             return redirect('scraping:scraper_management')
@@ -455,6 +463,16 @@ class ScraperManagementView(LoginRequiredMixin, ListView):
                     scraper.last_run = timezone.now()
                     scraper.save()
                     messages.success(request, f'Successfully scraped {jobs_created} jobs from cv.ee')
+                elif scraper.source == 'linkedin':
+                    scraper.status = 'running'
+                    scraper.save()
+                    linkedin_scraper = LinkedInScraper()
+                    jobs = linkedin_scraper.search_jobs(['python', 'django', 'flask'], 'Estonia', 5)
+                    jobs_created = self._save_linkedin_jobs(jobs)
+                    scraper.status = 'completed'
+                    scraper.last_run = timezone.now()
+                    scraper.save()
+                    messages.success(request, f'Successfully scraped {jobs_created} jobs from LinkedIn')
                 # Здесь будет cvkeskus.ee
                 else:
                     messages.error(request, f'Scraper for {scraper.source} is not implemented yet')
@@ -467,6 +485,32 @@ class ScraperManagementView(LoginRequiredMixin, ListView):
         except Scraper.DoesNotExist:
             messages.error(request, 'Scraper not found')
         return redirect('scraping:scraper_management')
+
+    def _save_linkedin_jobs(self, jobs):
+        """Сохранить вакансии LinkedIn в базу данных"""
+        jobs_created = 0
+        for job_data in jobs:
+            try:
+                job, created = Job.objects.get_or_create(
+                    source_url=job_data.get('url', ''),
+                    defaults={
+                        'title': job_data.get('title', ''),
+                        'company_name': job_data.get('company', ''),
+                        'location': job_data.get('location', ''),
+                        'description': job_data.get('description', ''),
+                        'source_site': 'linkedin',
+                        'salary_min': job_data.get('salary_min'),
+                        'salary_max': job_data.get('salary_max'),
+                        'is_active': True
+                    }
+                )
+                if created:
+                    jobs_created += 1
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error saving LinkedIn job: {str(e)}")
+        return jobs_created
 
 
 @login_required

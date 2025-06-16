@@ -1,0 +1,183 @@
+{
+  "main": {
+    "id": "4045fb3eddfa6a26",
+    "type": "split",
+    "children": [
+      {
+        "id": "757a84837365e641",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "422412b7b8fac516",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "send-cv/gr-de-1.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "gr-de-1"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "e41674534088b754",
+    "type": "split",
+    "children": [
+      {
+        "id": "63b1ab2c352b99b0",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "437591bb85f561a3",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "255f565d00e22146",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "48b61e91e6278f3a",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "right": {
+    "id": "e20ce10bb8366cf0",
+    "type": "split",
+    "children": [
+      {
+        "id": "e9ae7664e4fb3acc",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "f6e713ede6984321",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "send-cv/gr-de-1.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for gr-de-1"
+            }
+          },
+          {
+            "id": "6d4cdfd4c1d63786",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "send-cv/gr-de-1.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from gr-de-1"
+            }
+          },
+          {
+            "id": "c90009a40d57eab8",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "e3ebbb313d727039",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "send-cv/gr-de-1.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of gr-de-1"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false
+    }
+  },
+  "active": "422412b7b8fac516",
+  "lastOpenFiles": [
+    "dmitri-gornakov.jpg",
+    "DmitriGornakov_CV_template.jpg",
+    "DmitriGornakov_CV_template.pdf",
+    "dev_proc/plan-1.md",
+    "plan-first.md",
+    "plan-details.md",
+    "learning_project.md",
+    "send-cv/gr-de-1.md"
+  ]
+}
