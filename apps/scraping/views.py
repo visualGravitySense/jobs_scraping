@@ -18,6 +18,7 @@ import xlsxwriter
 from datetime import datetime
 from django.views.generic import ListView, DetailView
 import redis
+import traceback
 
 from .models import (
     Vacancy, ParsedJob, ParsedCompany, Job, Company, 
@@ -711,3 +712,45 @@ def scraper_progress_api(request, scraper_name):
     r = redis.Redis(host='localhost', port=6379, db=0)
     progress = r.get(f'scraper_progress:{scraper_name}')
     return JsonResponse({'progress': int(progress) if progress else 0})
+
+
+def test_scraper_api(request, scraper_id):
+    """API endpoint for testing a scraper"""
+    try:
+        scraper = Scraper.objects.get(id=scraper_id)
+        result = scraper.test_scraper()
+        
+        if isinstance(result, dict) and 'error' in result:
+            return JsonResponse({
+                'success': False,
+                'error': result['error']
+            })
+        
+        if result:
+            return JsonResponse({
+                'success': True,
+                'job': {
+                    'title': result.get('title', ''),
+                    'company': result.get('company', ''),
+                    'location': result.get('location', ''),
+                    'description': result.get('description', '')[:200] + '...' if result.get('description') else '',
+                    'url': result.get('url', '')
+                }
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': 'No jobs found'
+            })
+    except Scraper.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Scraper not found'
+        })
+    except Exception as e:
+        tb = traceback.format_exc()
+        return JsonResponse({
+            'success': False,
+            'error': str(e),
+            'traceback': tb
+        })

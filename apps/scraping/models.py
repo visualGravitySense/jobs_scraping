@@ -293,3 +293,28 @@ class Scraper(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.source})"
+
+    def test_scraper(self):
+        """Test the scraper by getting the first job from the source"""
+        from .scrapers.cv_ee_selenium_scraper import CVeeSeleniumScraper
+        from .scrapers.cvkeskus_selenium import cvkeskus_selenium_scraper
+        from .scrapers.linkedin_scraper import LinkedInScraper
+
+        try:
+            if self.source == 'cv_ee':
+                scraper = CVeeSeleniumScraper()
+                jobs = scraper.search_jobs(keywords=['python'], location='Tallinn', max_pages=1)
+                if jobs:
+                    return jobs[0]
+            elif self.source == 'cvkeskus':
+                jobs = cvkeskus_selenium_scraper(self.config.get('url', ''))
+                if jobs:
+                    return jobs[0]
+            elif self.source == 'linkedin':
+                scraper = LinkedInScraper()
+                jobs = scraper.search_jobs(['python'], 'Estonia', 1)
+                if jobs:
+                    return jobs[0]
+            return None
+        except Exception as e:
+            return {'error': str(e)}

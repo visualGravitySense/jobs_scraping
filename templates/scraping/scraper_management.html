@@ -49,6 +49,9 @@
                                         <button type="submit" name="action" value="start" class="btn btn-success btn-sm">Запустить</button>
                                     {% endif %}
                                 </form>
+                                <button type="button" class="btn btn-info btn-sm test-scraper" data-scraper-id="{{ scraper.id }}" data-bs-toggle="modal" data-bs-target="#testResultModal">
+                                    Тест
+                                </button>
                             </td>
                             <td style="min-width:160px;">
                                 <div class="progress" style="height: 22px;">
@@ -104,6 +107,31 @@
         </div>
     </div>
 </div>
+
+<!-- Test Result Modal -->
+<div class="modal fade" id="testResultModal" tabindex="-1" aria-labelledby="testResultModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="testResultModalLabel">Результат тестирования</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="testResultContent">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Тестирование скрапера...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -125,6 +153,62 @@ function pollAllProgress() {
     updateProgress('{{ scraper.source }}');
     {% endfor %}
 }
+
+// Test scraper functionality
+document.querySelectorAll('.test-scraper').forEach(button => {
+    button.addEventListener('click', function() {
+        const scraperId = this.dataset.scraperId;
+        const modalContent = document.getElementById('testResultContent');
+        
+        // Show loading state
+        modalContent.innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Тестирование скрапера...</p>
+            </div>
+        `;
+        
+        // Fetch test results
+        fetch(`/scraping/api/scrapers/test/${scraperId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    modalContent.innerHTML = `
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">${data.job.title}</h5>
+                                <h6 class="card-subtitle mb-2 text-muted">${data.job.company}</h6>
+                                <p class="card-text">
+                                    <strong>Локация:</strong> ${data.job.location}<br>
+                                    <strong>Описание:</strong><br>
+                                    ${data.job.description}
+                                </p>
+                                <a href="${data.job.url}" target="_blank" class="btn btn-primary">Открыть вакансию</a>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    modalContent.innerHTML = `
+                        <div class="alert alert-danger">
+                            <h5>Ошибка при тестировании скрапера</h5>
+                            <p>${data.error}</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                modalContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h5>Ошибка при тестировании скрапера</h5>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            });
+    });
+});
+
 setInterval(pollAllProgress, 3000);
 document.addEventListener('DOMContentLoaded', pollAllProgress);
 </script>
