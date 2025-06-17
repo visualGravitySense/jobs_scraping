@@ -78,8 +78,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "e20ce10bb8366cf0",
@@ -171,6 +170,7 @@
   },
   "active": "422412b7b8fac516",
   "lastOpenFiles": [
+    "send-cv/gr-de-1",
     "dmitri-gornakov.jpg",
     "DmitriGornakov_CV_template.jpg",
     "DmitriGornakov_CV_template.pdf",

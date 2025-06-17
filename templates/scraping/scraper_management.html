@@ -20,6 +20,7 @@
                             <th>Статус</th>
                             <th>Последний запуск</th>
                             <th>Действия</th>
+                            <th>Прогресс</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -48,6 +49,11 @@
                                         <button type="submit" name="action" value="start" class="btn btn-success btn-sm">Запустить</button>
                                     {% endif %}
                                 </form>
+                            </td>
+                            <td style="min-width:160px;">
+                                <div class="progress" style="height: 22px;">
+                                    <div id="progress-bar-{{ scraper.source }}" class="progress-bar" style="width: 0%; min-width: 40px;">0%</div>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -98,4 +104,28 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateProgress(scraperSource) {
+    fetch(`/scraping/api/scrapers/progress/${scraperSource}/`)
+        .then(response => response.json())
+        .then(data => {
+            const bar = document.getElementById(`progress-bar-${scraperSource}`);
+            if (bar) {
+                bar.style.width = data.progress + '%';
+                bar.textContent = data.progress + '%';
+            }
+        });
+}
+
+function pollAllProgress() {
+    {% for scraper in scrapers %}
+    updateProgress('{{ scraper.source }}');
+    {% endfor %}
+}
+setInterval(pollAllProgress, 3000);
+document.addEventListener('DOMContentLoaded', pollAllProgress);
+</script>
 {% endblock %} 
