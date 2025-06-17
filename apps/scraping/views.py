@@ -17,6 +17,7 @@ from io import BytesIO
 import xlsxwriter
 from datetime import datetime
 from django.views.generic import ListView, DetailView
+import redis
 
 from .models import (
     Vacancy, ParsedJob, ParsedCompany, Job, Company, 
@@ -704,3 +705,9 @@ def export_jobs(request):
         return response
     
     return HttpResponse('Invalid format', status=400)
+
+
+def scraper_progress_api(request, scraper_name):
+    r = redis.Redis(host='localhost', port=6379, db=0)
+    progress = r.get(f'scraper_progress:{scraper_name}')
+    return JsonResponse({'progress': int(progress) if progress else 0})

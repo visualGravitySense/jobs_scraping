@@ -8,6 +8,9 @@ import subprocess
 import os
 import requests
 from typing import List, Dict
+import redis
+import time
+from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +19,10 @@ def scrape_cv_ee_jobs():
     """
     Scrape CV.ee jobs and import them into the database
     """
+    def set_progress(scraper_name, percent):
+        r = redis.Redis(host='localhost', port=6379, db=0)
+        r.set(f'scraper_progress:{scraper_name}', percent)
+
     try:
         logger.info("Starting CV.ee scraping task")
         
@@ -31,9 +38,10 @@ def scrape_cv_ee_jobs():
         
         imported_count = 0
         updated_count = 0
+        total = len(jobs_data) if jobs_data else 1
         
         with transaction.atomic():
-            for job_data in jobs_data:
+            for i, job_data in enumerate(jobs_data):
                 try:
                     # Создаем или получаем компанию
                     company = None
@@ -73,7 +81,9 @@ def scrape_cv_ee_jobs():
                 except Exception as e:
                     logger.error(f"Error processing job {job_data.get('title', 'Unknown')}: {str(e)}")
                     continue
+                set_progress('cvee', int((i + 1) / total * 100))
         
+        set_progress('cvee', 100)
         logger.info(f"CV.ee scraping completed: {imported_count} new, {updated_count} updated")
         
         # Запускаем расчет скоров для новых вакансий
@@ -83,6 +93,7 @@ def scrape_cv_ee_jobs():
         
     except Exception as e:
         logger.error(f"Error in CV.ee scraping task: {str(e)}")
+        set_progress('cvee', 0)
         return f"Error: {str(e)}"
 
 @shared_task
@@ -90,6 +101,10 @@ def scrape_linkedin_jobs():
     """
     Scrape LinkedIn jobs and import them into the database
     """
+    def set_progress(scraper_name, percent):
+        r = redis.Redis(host='localhost', port=6379, db=0)
+        r.set(f'scraper_progress:{scraper_name}', percent)
+
     try:
         logger.info("Starting LinkedIn scraping task")
         
@@ -100,6 +115,7 @@ def scrape_linkedin_jobs():
         linkedin_auth = LinkedInAuth.objects.filter(is_active=True).first()
         if not linkedin_auth:
             logger.warning("No active LinkedIn credentials found")
+            set_progress('linkedin', 0)
             return "No LinkedIn credentials available"
         
         scraper = LinkedInScraper()
@@ -112,9 +128,10 @@ def scrape_linkedin_jobs():
         
         imported_count = 0
         updated_count = 0
+        total = len(jobs_data) if jobs_data else 1
         
         with transaction.atomic():
-            for job_data in jobs_data:
+            for i, job_data in enumerate(jobs_data):
                 try:
                     # Создаем или получаем компанию
                     company = None
@@ -148,7 +165,9 @@ def scrape_linkedin_jobs():
                 except Exception as e:
                     logger.error(f"Error processing LinkedIn job {job_data.get('title', 'Unknown')}: {str(e)}")
                     continue
+                set_progress('linkedin', int((i + 1) / total * 100))
         
+        set_progress('linkedin', 100)
         logger.info(f"LinkedIn scraping completed: {imported_count} new, {updated_count} updated")
         
         # Запускаем расчет скоров для новых вакансий
@@ -158,6 +177,7 @@ def scrape_linkedin_jobs():
         
     except Exception as e:
         logger.error(f"Error in LinkedIn scraping task: {str(e)}")
+        set_progress('linkedin', 0)
         return f"Error: {str(e)}"
 
 @shared_task
@@ -431,4 +451,73 @@ def update_application_reminders():
         
     except Exception as e:
         logger.error(f"Error in application reminders task: {str(e)}")
+        return f"Error: {str(e)}"
+
+@shared_task
+def scrape_cvkeskus_jobs():
+    """
+    Scrape CVKeskus jobs and import them into the database
+    """
+    def set_progress(scraper_name, percent):
+        r = redis.Redis(host='localhost', port=6379, db=0)
+        r.set(f'scraper_progress:{scraper_name}', percent)
+    try:
+        logger.info("Starting CVKeskus scraping task")
+        from .scrapers.cvkeskus_selenium_scraper import CVKeskusSeleniumScraper
+        from .models import Job, Company
+        scraper = CVKeskusSeleniumScraper()
+        jobs_created = 0
+        job_cards = []
+        # Получаем job_cards через BeautifulSoup, как в scrape_jobs
+        scraper.driver.get(scraper.BASE_URL)
+        time.sleep(5)
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(scraper.driver.page_source, 'html.parser')
+        job_cards = soup.find_all('article', class_='bg-white')
+        total = len(job_cards) if job_cards else 1
+        for i, card in enumerate(job_cards):
+            try:
+                h2 = card.find('h2')
+                title = h2.text.strip() if h2 else ''
+                a_tag = card.find('a', attrs={'data-event-skip-all': True})
+                job_url = a_tag['data-href'] if a_tag and a_tag.has_attr('data-href') else ''
+                if job_url and not job_url.startswith('http'):
+                    job_url = f"https://www.cvkeskus.ee{job_url}"
+                company_span = card.find('span', class_='job-company')
+                company_name = company_span.text.strip() if company_span else ''
+                location = ''
+                description = ''
+                company, _ = Company.objects.get_or_create(
+                    name=company_name or 'Unknown',
+                    defaults={'location': location, 'size': 'small'}
+                )
+                job, created = Job.objects.get_or_create(
+                    source_url=job_url,
+                    defaults={
+                        'title': title,
+                        'company': company,
+                        'company_name': company_name,
+                        'location': location,
+                        'description': description,
+                        'salary_min': None,
+                        'salary_max': None,
+                        'salary_currency': 'EUR',
+                        'source_site': 'cvkeskus',
+                        'posted_date': timezone.now(),
+                        'is_active': True
+                    }
+                )
+                if created:
+                    jobs_created += 1
+            except Exception as e:
+                logger.error(f"Error processing job card: {e}")
+                continue
+            set_progress('cvkeskus', int((i + 1) / total * 100))
+        set_progress('cvkeskus', 100)
+        scraper.driver.quit()
+        logger.info(f"CVKeskus scraping completed: {jobs_created} new jobs")
+        return f"CVKeskus scraping completed: {jobs_created} new jobs"
+    except Exception as e:
+        logger.error(f"Error in CVKeskus scraping task: {str(e)}")
+        set_progress('cvkeskus', 0)
         return f"Error: {str(e)}" 
