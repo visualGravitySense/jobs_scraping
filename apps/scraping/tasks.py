@@ -29,7 +29,7 @@ def scrape_cv_ee_jobs():
         from .scrapers.cv_ee_selenium_scraper import CVeeSeleniumScraper
         from .models import Job, Company
         
-        scraper = CVeeSeleniumScraper(headless=True)
+        scraper = CVeeSeleniumScraper()
         jobs_data = scraper.search_jobs(
             keywords=["python", "django", "javascript", "react", "vue", "angular", "node.js"],
             location="Tallinn",

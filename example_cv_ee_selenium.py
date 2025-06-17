@@ -4,7 +4,8 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import undetected_chromedriver as uc
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup  # NEW: for parsing HTML
 
 def scrape_cv_ee():
@@ -12,8 +13,14 @@ def scrape_cv_ee():
     # options.add_argument('--headless') # Запустите в безголовом режиме, если не нужен GUI
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
-    # Инициализируем undetected_chromedriver
-    driver = uc.Chrome(options=options)
+    options.add_argument('--disable-blink-features=AutomationControlled')
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option('useAutomationExtension', False)
+    
+    # Инициализируем Chrome с webdriver-manager
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=options)
+    driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
     # Устанавливаем размер окна
     driver.set_window_size(1920, 1080)
