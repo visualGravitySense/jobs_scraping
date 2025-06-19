@@ -295,26 +295,25 @@ class Scraper(models.Model):
         return f"{self.name} ({self.source})"
 
     def test_scraper(self):
-        """Test the scraper by getting the first job from the source"""
+        """Test the scraper and return first job"""
         from .scrapers.cv_ee_selenium_scraper import CVeeSeleniumScraper
-        from .scrapers.cvkeskus_selenium import cvkeskus_selenium_scraper
+        from .scrapers.cvkeskus_scraper import cvkeskus_scraper
         from .scrapers.linkedin_scraper import LinkedInScraper
 
         try:
             if self.source == 'cv_ee':
                 scraper = CVeeSeleniumScraper()
                 jobs = scraper.search_jobs(keywords=['python'], location='Tallinn', max_pages=1)
-                if jobs:
-                    return jobs[0]
+                return jobs[0] if jobs else None
             elif self.source == 'cvkeskus':
-                jobs = cvkeskus_selenium_scraper(self.config.get('url', ''))
-                if jobs:
-                    return jobs[0]
+                # Используем конкретный URL для CVKeskus
+                search_url = "https://www.cvkeskus.ee/toopakkumised?op=search&search%5Bjob_salary%5D=3&ga_track=all_ads&search%5Bcategories%5D%5B%5D=8&search%5Bcategories%5D%5B%5D=23&search%5Bkeyword%5D=&search%5Bexpires_days%5D=&search%5Bjob_lang%5D=&search%5Bsalary%5D="
+                jobs = cvkeskus_scraper(search_url)
+                return jobs[0] if jobs else None
             elif self.source == 'linkedin':
                 scraper = LinkedInScraper()
                 jobs = scraper.search_jobs(['python'], 'Estonia', 1)
-                if jobs:
-                    return jobs[0]
+                return jobs[0] if jobs else None
             return None
         except Exception as e:
             return {'error': str(e)}
@@ -322,7 +321,7 @@ class Scraper(models.Model):
     def get_latest_jobs(self, limit=10):
         """Get the latest jobs from the scraper source"""
         from .scrapers.cv_ee_selenium_scraper import CVeeSeleniumScraper
-        from .scrapers.cvkeskus_selenium import cvkeskus_selenium_scraper
+        from .scrapers.cvkeskus_scraper import cvkeskus_scraper
         from .scrapers.linkedin_scraper import LinkedInScraper
 
         try:
@@ -331,7 +330,9 @@ class Scraper(models.Model):
                 jobs = scraper.search_jobs(keywords=['python', 'django', 'javascript'], location='Tallinn', max_pages=2)
                 return jobs[:limit] if jobs else []
             elif self.source == 'cvkeskus':
-                jobs = cvkeskus_selenium_scraper(self.config.get('url', ''))
+                # Используем конкретный URL для CVKeskus
+                search_url = "https://www.cvkeskus.ee/toopakkumised?op=search&search%5Bjob_salary%5D=3&ga_track=all_ads&search%5Bcategories%5D%5B%5D=8&search%5Bcategories%5D%5B%5D=23&search%5Bkeyword%5D=&search%5Bexpires_days%5D=&search%5Bjob_lang%5D=&search%5Bsalary%5D="
+                jobs = cvkeskus_scraper(search_url)
                 return jobs[:limit] if jobs else []
             elif self.source == 'linkedin':
                 scraper = LinkedInScraper()
