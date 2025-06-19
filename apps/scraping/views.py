@@ -19,6 +19,7 @@ from datetime import datetime
 from django.views.generic import ListView, DetailView
 import redis
 import traceback
+from django.views.decorators.csrf import csrf_exempt
 
 from .models import (
     Vacancy, ParsedJob, ParsedCompany, Job, Company, 
@@ -445,7 +446,7 @@ class ScraperManagementView(LoginRequiredMixin, ListView):
                     scraper.status = 'completed'
                     scraper.last_run = timezone.now()
                     scraper.save()
-                # Здесь будет cvkeskus.ee
+                    # Здесь будет cvkeskus.ee
             messages.success(request, f'All scrapers finished. Total jobs scraped: {total}')
             return redirect('scraping:scraper_management')
 
@@ -475,7 +476,7 @@ class ScraperManagementView(LoginRequiredMixin, ListView):
                     scraper.last_run = timezone.now()
                     scraper.save()
                     messages.success(request, f'Successfully scraped {jobs_created} jobs from LinkedIn')
-                # Здесь будет cvkeskus.ee
+                    # Здесь будет cvkeskus.ee
                 else:
                     messages.error(request, f'Scraper for {scraper.source} is not implemented yet')
             elif action == 'stop':
@@ -709,48 +710,105 @@ def export_jobs(request):
 
 
 def scraper_progress_api(request, scraper_name):
-    r = redis.Redis(host='localhost', port=6379, db=0)
-    progress = r.get(f'scraper_progress:{scraper_name}')
-    return JsonResponse({'progress': int(progress) if progress else 0})
-
-
-def test_scraper_api(request, scraper_id):
-    """API endpoint for testing a scraper"""
     try:
-        scraper = Scraper.objects.get(id=scraper_id)
-        result = scraper.test_scraper()
+        r = redis.Redis(host='localhost', port=6379, db=0, socket_connect_timeout=1, socket_timeout=1)
+        # Проверяем подключение
+        r.ping()
+        progress = r.get(f'scraper_progress:{scraper_name}')
+        total_jobs = r.get(f'scraper_total_jobs:{scraper_name}')
+        collected_jobs = r.get(f'scraper_collected_jobs:{scraper_name}')
         
-        if isinstance(result, dict) and 'error' in result:
-            return JsonResponse({
-                'success': False,
-                'error': result['error']
-            })
-        
-        if result:
-            return JsonResponse({
-                'success': True,
-                'job': {
-                    'title': result.get('title', ''),
-                    'company': result.get('company', ''),
-                    'location': result.get('location', ''),
-                    'description': result.get('description', '')[:200] + '...' if result.get('description') else '',
-                    'url': result.get('url', '')
-                }
-            })
-        else:
-            return JsonResponse({
-                'success': False,
-                'error': 'No jobs found'
-            })
-    except Scraper.DoesNotExist:
         return JsonResponse({
-            'success': False,
-            'error': 'Scraper not found'
+            'progress': int(progress) if progress else 0,
+            'total_jobs': int(total_jobs) if total_jobs else 0,
+            'collected_jobs': int(collected_jobs) if collected_jobs else 0
+        })
+    except redis.ConnectionError:
+        # Redis не запущен или недоступен
+        return JsonResponse({
+            'progress': 0, 
+            'total_jobs': 0,
+            'collected_jobs': 0,
+            'error': 'Redis server not available'
         })
     except Exception as e:
-        tb = traceback.format_exc()
+        # Другие ошибки
         return JsonResponse({
-            'success': False,
-            'error': str(e),
-            'traceback': tb
+            'progress': 0, 
+            'total_jobs': 0,
+            'collected_jobs': 0,
+            'error': f'Redis error: {str(e)}'
         })
+
+
+@csrf_exempt
+def test_scraper(request, scraper_id):
+    """Test scraper and return first job"""
+    if request.method == 'GET':
+        try:
+            scraper = Scraper.objects.get(id=scraper_id)
+            result = scraper.test_scraper()
+            
+            if isinstance(result, dict) and 'error' in result:
+                return JsonResponse({'success': False, 'error': result['error']})
+            
+            if result:
+                # Если результат - список, берем первый элемент
+                job_data = result[0] if isinstance(result, list) else result
+                return JsonResponse({
+                    'success': True,
+                    'job': {
+                        'title': job_data.get('title', ''),
+                        'company': job_data.get('company', ''),
+                        'location': job_data.get('location', ''),
+                        'description': job_data.get('description', '')[:200] + '...' if job_data.get('description') else '',
+                        'url': job_data.get('url', '')
+                    }
+                })
+            else:
+                return JsonResponse({'success': False, 'error': 'No jobs found'})
+        except Scraper.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Scraper not found'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Method not allowed'})
+
+
+@csrf_exempt
+def get_latest_jobs(request, scraper_id):
+    """Get latest jobs from scraper"""
+    if request.method == 'GET':
+        try:
+            scraper = Scraper.objects.get(id=scraper_id)
+            result = scraper.get_latest_jobs(limit=10)
+            
+            if isinstance(result, dict) and 'error' in result:
+                return JsonResponse({'success': False, 'error': result['error']})
+            
+            if result:
+                jobs_data = []
+                for job in result:
+                    jobs_data.append({
+                        'title': job.get('title', ''),
+                        'company': job.get('company', ''),
+                        'location': job.get('location', ''),
+                        'description': job.get('description', '')[:150] + '...' if job.get('description') else '',
+                        'url': job.get('url', ''),
+                        'salary_min': job.get('salary_min'),
+                        'salary_max': job.get('salary_max')
+                    })
+                
+                return JsonResponse({
+                    'success': True,
+                    'jobs': jobs_data,
+                    'count': len(jobs_data)
+                })
+            else:
+                return JsonResponse({'success': False, 'error': 'No jobs found'})
+        except Scraper.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Scraper not found'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Method not allowed'})

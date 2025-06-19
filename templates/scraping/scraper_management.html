@@ -21,6 +21,7 @@
                             <th>Последний запуск</th>
                             <th>Действия</th>
                             <th>Прогресс</th>
+                            <th>Статистика</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -49,13 +50,22 @@
                                         <button type="submit" name="action" value="start" class="btn btn-success btn-sm">Запустить</button>
                                     {% endif %}
                                 </form>
-                                <button type="button" class="btn btn-info btn-sm test-scraper" data-scraper-id="{{ scraper.id }}" data-bs-toggle="modal" data-bs-target="#testResultModal">
-                                    Тест
+                                <button class="btn btn-info btn-sm" onclick="testScraper({{ scraper.id }})">
+                                    <i class="fas fa-play"></i> Test
+                                </button>
+                                <button class="btn btn-warning btn-sm" onclick="getLatestJobs({{ scraper.id }})">
+                                    <i class="fas fa-list"></i> Latest 10
                                 </button>
                             </td>
                             <td style="min-width:160px;">
                                 <div class="progress" style="height: 22px;">
                                     <div id="progress-bar-{{ scraper.source }}" class="progress-bar" style="width: 0%; min-width: 40px;">0%</div>
+                                </div>
+                            </td>
+                            <td style="min-width:120px;">
+                                <div id="stats-{{ scraper.source }}" class="small text-muted">
+                                    <div>Найдено: <span id="total-jobs-{{ scraper.source }}">0</span></div>
+                                    <div>Собрано: <span id="collected-jobs-{{ scraper.source }}">0</span></div>
                                 </div>
                             </td>
                         </tr>
@@ -108,26 +118,37 @@
     </div>
 </div>
 
-<!-- Test Result Modal -->
+<!-- Modal for Test Results -->
 <div class="modal fade" id="testResultModal" tabindex="-1" aria-labelledby="testResultModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="testResultModalLabel">Результат тестирования</h5>
+                <h5 class="modal-title" id="testResultModalLabel">Test Result</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div id="testResultContent">
-                    <div class="text-center">
-                        <div class="spinner-border" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="mt-2">Тестирование скрапера...</p>
-                    </div>
-                </div>
+            <div class="modal-body" id="testResultModalBody">
+                <!-- Content will be loaded here -->
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Latest Jobs -->
+<div class="modal fade" id="latestJobsModal" tabindex="-1" aria-labelledby="latestJobsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="latestJobsModalLabel">Latest Jobs</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="latestJobsModalBody">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -136,14 +157,75 @@
 
 {% block extra_js %}
 <script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
 function updateProgress(scraperSource) {
     fetch(`/scraping/api/scrapers/progress/${scraperSource}/`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
             const bar = document.getElementById(`progress-bar-${scraperSource}`);
             if (bar) {
                 bar.style.width = data.progress + '%';
                 bar.textContent = data.progress + '%';
+                
+                // Если есть ошибка Redis, показываем предупреждение
+                if (data.error) {
+                    bar.title = `Warning: ${data.error}`;
+                    bar.classList.add('bg-warning');
+                } else {
+                    bar.title = '';
+                    bar.classList.remove('bg-warning');
+                }
+            }
+            
+            // Обновляем статистику вакансий
+            const totalJobsElement = document.getElementById(`total-jobs-${scraperSource}`);
+            const collectedJobsElement = document.getElementById(`collected-jobs-${scraperSource}`);
+            
+            if (totalJobsElement) {
+                totalJobsElement.textContent = data.total_jobs || 0;
+            }
+            if (collectedJobsElement) {
+                collectedJobsElement.textContent = data.collected_jobs || 0;
+            }
+        })
+        .catch(error => {
+            console.warn(`Failed to update progress for ${scraperSource}:`, error.message);
+            const bar = document.getElementById(`progress-bar-${scraperSource}`);
+            if (bar) {
+                bar.style.width = '0%';
+                bar.textContent = '0%';
+                bar.title = 'Progress tracking unavailable';
+                bar.classList.add('bg-secondary');
+            }
+            
+            // Сбрасываем статистику при ошибке
+            const totalJobsElement = document.getElementById(`total-jobs-${scraperSource}`);
+            const collectedJobsElement = document.getElementById(`collected-jobs-${scraperSource}`);
+            
+            if (totalJobsElement) {
+                totalJobsElement.textContent = '0';
+            }
+            if (collectedJobsElement) {
+                collectedJobsElement.textContent = '0';
             }
         });
 }
@@ -171,7 +253,7 @@ document.querySelectorAll('.test-scraper').forEach(button => {
         `;
         
         // Fetch test results
-        fetch(`/scraping/api/scrapers/test/${scraperId}/`)
+        fetch(`/scraping/api/test-scraper/${scraperId}/`)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -209,7 +291,192 @@ document.querySelectorAll('.test-scraper').forEach(button => {
     });
 });
 
+// Get latest jobs functionality
+document.querySelectorAll('.get-latest-jobs').forEach(button => {
+    button.addEventListener('click', function() {
+        const scraperId = this.dataset.scraperId;
+        const modalContent = document.getElementById('latestJobsContent');
+        
+        // Show loading state
+        modalContent.innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Загрузка последних вакансий...</p>
+            </div>
+        `;
+        
+        // Fetch latest jobs
+        fetch(`/scraping/api/latest-jobs/${scraperId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    let jobsHtml = `<h6>Найдено вакансий: ${data.count}</h6>`;
+                    
+                    data.jobs.forEach((job, index) => {
+                        const salary = job.salary_min && job.salary_max 
+                            ? `${job.salary_min} - ${job.salary_max} €`
+                            : job.salary_min 
+                                ? `${job.salary_min} €`
+                                : 'Не указана';
+                        
+                        jobsHtml += `
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">${index + 1}. ${job.title}</h6>
+                                    <h6 class="card-subtitle mb-2 text-muted">${job.company}</h6>
+                                    <p class="card-text">
+                                        <strong>Локация:</strong> ${job.location}<br>
+                                        <strong>Зарплата:</strong> ${salary}<br>
+                                        <strong>Описание:</strong><br>
+                                        ${job.description}
+                                    </p>
+                                    <a href="${job.url}" target="_blank" class="btn btn-primary btn-sm">Открыть вакансию</a>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    modalContent.innerHTML = jobsHtml;
+                } else {
+                    modalContent.innerHTML = `
+                        <div class="alert alert-danger">
+                            <h5>Ошибка при загрузке вакансий</h5>
+                            <p>${data.error}</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                modalContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h5>Ошибка при загрузке вакансий</h5>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            });
+    });
+});
+
 setInterval(pollAllProgress, 3000);
 document.addEventListener('DOMContentLoaded', pollAllProgress);
+
+function testScraper(scraperId) {
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+    button.disabled = true;
+
+    fetch(`/scraping/api/test-scraper/${scraperId}/`)
+        .then(response => response.json())
+        .then(data => {
+            const modal = new bootstrap.Modal(document.getElementById('testResultModal'));
+            const modalBody = document.getElementById('testResultModalBody');
+            
+            if (data.success) {
+                modalBody.innerHTML = `
+                    <div class="alert alert-success">
+                        <h6>Test successful!</h6>
+                        <p><strong>Title:</strong> ${data.job.title}</p>
+                        <p><strong>Company:</strong> ${data.job.company}</p>
+                        <p><strong>Location:</strong> ${data.job.location}</p>
+                        <p><strong>Description:</strong> ${data.job.description}</p>
+                        <a href="${data.job.url}" target="_blank" class="btn btn-primary btn-sm">Open Job</a>
+                    </div>
+                `;
+            } else {
+                modalBody.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h6>Test failed</h6>
+                        <p>${data.error}</p>
+                    </div>
+                `;
+            }
+            modal.show();
+        })
+        .catch(error => {
+            const modal = new bootstrap.Modal(document.getElementById('testResultModal'));
+            const modalBody = document.getElementById('testResultModalBody');
+            modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    <h6>Error</h6>
+                    <p>${error.message}</p>
+                </div>
+            `;
+            modal.show();
+        })
+        .finally(() => {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+}
+
+function getLatestJobs(scraperId) {
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+    button.disabled = true;
+
+    fetch(`/scraping/api/latest-jobs/${scraperId}/`)
+        .then(response => response.json())
+        .then(data => {
+            const modal = new bootstrap.Modal(document.getElementById('latestJobsModal'));
+            const modalBody = document.getElementById('latestJobsModalBody');
+            
+            if (data.success) {
+                let jobsHtml = `<h6>Found ${data.count} jobs:</h6>`;
+                
+                data.jobs.forEach((job, index) => {
+                    const salary = job.salary_min && job.salary_max 
+                        ? `${job.salary_min} - ${job.salary_max} €`
+                        : job.salary_min 
+                            ? `${job.salary_min} €`
+                            : 'Not specified';
+                    
+                    jobsHtml += `
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">${index + 1}. ${job.title}</h6>
+                                <h6 class="card-subtitle mb-2 text-muted">${job.company}</h6>
+                                <p class="card-text">
+                                    <strong>Location:</strong> ${job.location}<br>
+                                    <strong>Salary:</strong> ${salary}<br>
+                                    <strong>Description:</strong><br>
+                                    ${job.description}
+                                </p>
+                                <a href="${job.url}" target="_blank" class="btn btn-primary btn-sm">Open Job</a>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                modalBody.innerHTML = jobsHtml;
+            } else {
+                modalBody.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h6>Error loading jobs</h6>
+                        <p>${data.error}</p>
+                    </div>
+                `;
+            }
+            modal.show();
+        })
+        .catch(error => {
+            const modal = new bootstrap.Modal(document.getElementById('latestJobsModal'));
+            const modalBody = document.getElementById('latestJobsModalBody');
+            modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    <h6>Error</h6>
+                    <p>${error.message}</p>
+                </div>
+            `;
+            modal.show();
+        })
+        .finally(() => {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+}
 </script>
 {% endblock %} 
