@@ -318,3 +318,25 @@ class Scraper(models.Model):
             return None
         except Exception as e:
             return {'error': str(e)}
+
+    def get_latest_jobs(self, limit=10):
+        """Get the latest jobs from the scraper source"""
+        from .scrapers.cv_ee_selenium_scraper import CVeeSeleniumScraper
+        from .scrapers.cvkeskus_selenium import cvkeskus_selenium_scraper
+        from .scrapers.linkedin_scraper import LinkedInScraper
+
+        try:
+            if self.source == 'cv_ee':
+                scraper = CVeeSeleniumScraper()
+                jobs = scraper.search_jobs(keywords=['python', 'django', 'javascript'], location='Tallinn', max_pages=2)
+                return jobs[:limit] if jobs else []
+            elif self.source == 'cvkeskus':
+                jobs = cvkeskus_selenium_scraper(self.config.get('url', ''))
+                return jobs[:limit] if jobs else []
+            elif self.source == 'linkedin':
+                scraper = LinkedInScraper()
+                jobs = scraper.search_jobs(['python', 'developer', 'software'], 'Estonia', 2)
+                return jobs[:limit] if jobs else []
+            return []
+        except Exception as e:
+            return {'error': str(e)}
