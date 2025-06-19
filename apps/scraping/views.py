@@ -17,8 +17,7 @@ from io import BytesIO
 import xlsxwriter
 from datetime import datetime
 from django.views.generic import ListView, DetailView
-import redis
-import traceback
+# import redis  # Redis отключен для разработки
 from django.views.decorators.csrf import csrf_exempt
 
 from .models import (
@@ -28,7 +27,7 @@ from .models import (
 from .forms import FindForm, ParsedJobFilterForm
 from .scrapers.linkedin_scraper import LinkedInScraper
 from .services import JobAnalyticsService, NotificationService
-from .tasks import scrape_all_sources, calculate_job_scores
+from .tasks import scrape_all_sources, calculate_job_scores, scrape_cvkeskus_jobs
 from .scrapers.cv_ee_scraper import CVeeScraper
 from .scrapers.cv_ee_selenium_scraper import CVeeSeleniumScraper
 
@@ -446,7 +445,12 @@ class ScraperManagementView(LoginRequiredMixin, ListView):
                     scraper.status = 'completed'
                     scraper.last_run = timezone.now()
                     scraper.save()
-                    # Здесь будет cvkeskus.ee
+                elif scraper.source == 'cvkeskus':
+                    result = scrape_cvkeskus_jobs()
+                    scraper.status = 'completed'
+                    scraper.last_run = timezone.now()
+                    scraper.save()
+                    total += 1  # CV Keskus jobs are counted in the task
             messages.success(request, f'All scrapers finished. Total jobs scraped: {total}')
             return redirect('scraping:scraper_management')
 
@@ -476,7 +480,13 @@ class ScraperManagementView(LoginRequiredMixin, ListView):
                     scraper.last_run = timezone.now()
                     scraper.save()
                     messages.success(request, f'Successfully scraped {jobs_created} jobs from LinkedIn')
-                    # Здесь будет cvkeskus.ee
+                elif scraper.source == 'cvkeskus':
+                    from .tasks import scrape_cvkeskus_jobs
+                    result = scrape_cvkeskus_jobs()
+                    scraper.status = 'completed'
+                    scraper.last_run = timezone.now()
+                    scraper.save()
+                    messages.success(request, f'Successfully scraped {result} jobs from CV Keskus')
                 else:
                     messages.error(request, f'Scraper for {scraper.source} is not implemented yet')
             elif action == 'stop':
@@ -711,25 +721,15 @@ def export_jobs(request):
 
 def scraper_progress_api(request, scraper_name):
     try:
-        r = redis.Redis(host='localhost', port=6379, db=0, socket_connect_timeout=1, socket_timeout=1)
-        # Проверяем подключение
-        r.ping()
-        progress = r.get(f'scraper_progress:{scraper_name}')
-        total_jobs = r.get(f'scraper_total_jobs:{scraper_name}')
-        collected_jobs = r.get(f'scraper_collected_jobs:{scraper_name}')
+        # Redis отключен для разработки - возвращаем заглушку
+        progress = 0
+        total_jobs = 0
+        collected_jobs = 0
         
         return JsonResponse({
             'progress': int(progress) if progress else 0,
             'total_jobs': int(total_jobs) if total_jobs else 0,
             'collected_jobs': int(collected_jobs) if collected_jobs else 0
-        })
-    except redis.ConnectionError:
-        # Redis не запущен или недоступен
-        return JsonResponse({
-            'progress': 0, 
-            'total_jobs': 0,
-            'collected_jobs': 0,
-            'error': 'Redis server not available'
         })
     except Exception as e:
         # Другие ошибки
@@ -737,7 +737,7 @@ def scraper_progress_api(request, scraper_name):
             'progress': 0, 
             'total_jobs': 0,
             'collected_jobs': 0,
-            'error': f'Redis error: {str(e)}'
+            'error': f'Error: {str(e)}'
         })
 
 
