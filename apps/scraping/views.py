@@ -812,3 +812,44 @@ def get_latest_jobs(request, scraper_id):
             return JsonResponse({'success': False, 'error': str(e)})
     
     return JsonResponse({'success': False, 'error': 'Method not allowed'})
+
+
+@csrf_exempt
+def get_cvkeskus_it_jobs(request):
+    """Get latest 10 IT jobs from CV Keskus"""
+    if request.method == 'GET':
+        try:
+            from .scrapers.cvkeskus_scraper import CVKeskusScraper
+            
+            # Получаем количество вакансий из параметра, по умолчанию 10
+            limit = int(request.GET.get('limit', 10))
+            
+            scraper = CVKeskusScraper()
+            result = scraper.search_jobs(limit=limit)
+            
+            if result:
+                jobs_data = []
+                for job in result:
+                    jobs_data.append({
+                        'title': job.get('title', ''),
+                        'company': job.get('company', ''),
+                        'location': job.get('location', ''),
+                        'posted_date': job.get('posted_date', ''),
+                        'url': job.get('url', ''),
+                        'job_id': job.get('job_id', ''),
+                        'source': job.get('source', 'cvkeskus')
+                    })
+                
+                return JsonResponse({
+                    'success': True,
+                    'jobs': jobs_data,
+                    'count': len(jobs_data),
+                    'source': 'cvkeskus',
+                    'category': 'IT & Marketing'
+                })
+            else:
+                return JsonResponse({'success': False, 'error': 'No IT jobs found'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Method not allowed'})
