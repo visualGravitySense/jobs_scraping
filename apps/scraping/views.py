@@ -715,13 +715,30 @@ def scraper_progress_api(request, scraper_name):
         # Проверяем подключение
         r.ping()
         progress = r.get(f'scraper_progress:{scraper_name}')
-        return JsonResponse({'progress': int(progress) if progress else 0})
+        total_jobs = r.get(f'scraper_total_jobs:{scraper_name}')
+        collected_jobs = r.get(f'scraper_collected_jobs:{scraper_name}')
+        
+        return JsonResponse({
+            'progress': int(progress) if progress else 0,
+            'total_jobs': int(total_jobs) if total_jobs else 0,
+            'collected_jobs': int(collected_jobs) if collected_jobs else 0
+        })
     except redis.ConnectionError:
         # Redis не запущен или недоступен
-        return JsonResponse({'progress': 0, 'error': 'Redis server not available'})
+        return JsonResponse({
+            'progress': 0, 
+            'total_jobs': 0,
+            'collected_jobs': 0,
+            'error': 'Redis server not available'
+        })
     except Exception as e:
         # Другие ошибки
-        return JsonResponse({'progress': 0, 'error': f'Redis error: {str(e)}'})
+        return JsonResponse({
+            'progress': 0, 
+            'total_jobs': 0,
+            'collected_jobs': 0,
+            'error': f'Redis error: {str(e)}'
+        })
 
 
 @csrf_exempt

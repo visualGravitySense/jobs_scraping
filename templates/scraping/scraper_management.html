@@ -21,6 +21,7 @@
                             <th>Последний запуск</th>
                             <th>Действия</th>
                             <th>Прогресс</th>
+                            <th>Статистика</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -59,6 +60,12 @@
                             <td style="min-width:160px;">
                                 <div class="progress" style="height: 22px;">
                                     <div id="progress-bar-{{ scraper.source }}" class="progress-bar" style="width: 0%; min-width: 40px;">0%</div>
+                                </div>
+                            </td>
+                            <td style="min-width:120px;">
+                                <div id="stats-{{ scraper.source }}" class="small text-muted">
+                                    <div>Найдено: <span id="total-jobs-{{ scraper.source }}">0</span></div>
+                                    <div>Собрано: <span id="collected-jobs-{{ scraper.source }}">0</span></div>
                                 </div>
                             </td>
                         </tr>
@@ -188,6 +195,17 @@ function updateProgress(scraperSource) {
                     bar.classList.remove('bg-warning');
                 }
             }
+            
+            // Обновляем статистику вакансий
+            const totalJobsElement = document.getElementById(`total-jobs-${scraperSource}`);
+            const collectedJobsElement = document.getElementById(`collected-jobs-${scraperSource}`);
+            
+            if (totalJobsElement) {
+                totalJobsElement.textContent = data.total_jobs || 0;
+            }
+            if (collectedJobsElement) {
+                collectedJobsElement.textContent = data.collected_jobs || 0;
+            }
         })
         .catch(error => {
             console.warn(`Failed to update progress for ${scraperSource}:`, error.message);
@@ -197,6 +215,17 @@ function updateProgress(scraperSource) {
                 bar.textContent = '0%';
                 bar.title = 'Progress tracking unavailable';
                 bar.classList.add('bg-secondary');
+            }
+            
+            // Сбрасываем статистику при ошибке
+            const totalJobsElement = document.getElementById(`total-jobs-${scraperSource}`);
+            const collectedJobsElement = document.getElementById(`collected-jobs-${scraperSource}`);
+            
+            if (totalJobsElement) {
+                totalJobsElement.textContent = '0';
+            }
+            if (collectedJobsElement) {
+                collectedJobsElement.textContent = '0';
             }
         });
 }
