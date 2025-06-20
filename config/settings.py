@@ -51,10 +51,17 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'django_celery_results',
     # 'django_redis',  # Отключен для разработки
+    'crispy_forms',
+    'taggit',
+    'django_filters',
 
     # MY Apps
     'apps.scraping',
     'apps.accounts',
+    'apps.cv_builder',
+    'apps.portfolio',
+    'apps.applications',
+    'apps.templates_mgr',
 ]
 
 MIDDLEWARE = [
@@ -250,3 +257,8 @@ SCRAPER_CONFIG = {
         'max_pages': 5,
     },
 }
+
+# Настройки для crispy_forms, taggit, weasyprint
+CRISPY_TEMPLATE_PACK = 'bootstrap4'
+TAGGIT_CASE_INSENSITIVE = True
+WEAZYPRINT_BASEURL = 'http://localhost:8000'
