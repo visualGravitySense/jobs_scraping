@@ -15,10 +15,21 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from apps.scraping.views import home_view, list_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('apps.scraping.urls')),
     path('accounts/', include(('apps.accounts.urls', 'accounts'))),
+    
+    # Новые приложения CV сервиса
+    path('cv/', include('apps.cv_builder.urls')),
+    path('portfolio/', include('apps.portfolio.urls')),
+    path('applications/', include('apps.applications.urls')),
+    path('templates/', include('apps.templates_mgr.urls')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
