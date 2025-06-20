@@ -120,8 +120,7 @@ def scrape_linkedin_jobs():
         jobs_data = scraper.search_jobs(
             keywords=["software engineer", "developer", "programmer"],
             location="Estonia",
-            email=linkedin_auth.email,
-            password=linkedin_auth.password
+            max_pages=3
         )
         
         imported_count = 0

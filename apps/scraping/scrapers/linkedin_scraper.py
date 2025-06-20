@@ -73,9 +73,9 @@ class LinkedInScraper:
             )
             location = location_element.get_text(strip=True) if location_element else 'Unknown Location'
             
-            # Get job URL
+            # Get job URL and clean it
             job_link = job_card.find('a', class_='base-card__full-link') or job_card.find('a')
-            job_url = job_link.get('href') if job_link else None
+            job_url = job_link.get('href', '').split('?')[0] if job_link else None  # Убираем параметры из URL
             
             # Убедимся, что URL полный
             if job_url and not job_url.startswith('http'):
@@ -90,6 +90,14 @@ class LinkedInScraper:
             description_element = job_card.find('div', class_='job-search-card__snippet')
             description = description_element.get_text(strip=True) if description_element else ''
             
+            # Get posting date
+            date_element = (
+                job_card.find('time', class_='job-search-card__listdate') or
+                job_card.find('time', class_='job-posted-date') or
+                job_card.find('time')
+            )
+            posted_date = date_element.get('datetime') if date_element else None
+            
             return {
                 'title': title,
                 'company': company,
@@ -98,6 +106,7 @@ class LinkedInScraper:
                 'salary_min': salary_min,
                 'salary_max': salary_max,
                 'description': description,
+                'posted_date': posted_date,
                 'source': 'linkedin'
             }
         except Exception as e:
@@ -107,6 +116,8 @@ class LinkedInScraper:
     def search_jobs(self, keywords: List[str], location: str = None, max_pages: int = 5) -> List[Dict]:
         """Search for jobs on LinkedIn"""
         all_jobs = []
+        seen_urls = set()  # Для дедупликации по URL
+        seen_signatures = set()  # Для дедупликации по title + company + posted_date
         
         for page in range(max_pages):
             try:
@@ -140,7 +151,29 @@ class LinkedInScraper:
                 for card in job_cards:
                     job_data = self._parse_job_card(card)
                     if job_data and job_data.get('title') != 'Unknown Title':
-                        all_jobs.append(job_data)
+                        # Получаем дату публикации
+                        date_element = card.find('time', class_='job-search-card__listdate') or \
+                                     card.find('time', class_='job-posted-date') or \
+                                     card.find('time')
+                        posted_date = date_element.get('datetime') if date_element else ''
+                        
+                        # Создаем уникальную сигнатуру вакансии
+                        job_signature = f"{job_data.get('title', '')}-{job_data.get('company', '')}-{posted_date}"
+                        job_url = job_data.get('url')
+                        
+                        # Проверяем дубликаты по URL и сигнатуре
+                        is_duplicate = False
+                        if job_url:
+                            is_duplicate = job_url in seen_urls
+                            if not is_duplicate:
+                                seen_urls.add(job_url)
+                        
+                        if not is_duplicate:
+                            is_duplicate = job_signature in seen_signatures
+                            if not is_duplicate:
+                                seen_signatures.add(job_signature)
+                                job_data['posted_date'] = posted_date
+                                all_jobs.append(job_data)
                 
                 # Respect rate limiting
                 time.sleep(2)
@@ -149,7 +182,7 @@ class LinkedInScraper:
                 logger.error(f"Error searching jobs on page {page}: {str(e)}")
                 break
         
-        logger.info(f"Total jobs found: {len(all_jobs)}")
+        logger.info(f"Total unique jobs found: {len(all_jobs)}")
         return all_jobs
 
     def get_job_details(self, job_url: str) -> Dict:
