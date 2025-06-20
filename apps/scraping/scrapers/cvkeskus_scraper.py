@@ -204,15 +204,16 @@ class CVKeskusScraper:
             logger.error(f"Error parsing job card: {e}")
             return None
     
-    def search_jobs(self, keywords="", location="", max_pages=1):
+    def search_jobs(self, keywords="", location="", max_pages=1, limit=None):
         """Поиск вакансий на CV Keskus"""
         try:
-            # Формируем URL для поиска
+            # Формируем URL для поиска - используем фильтры для IT вакансий
             search_params = {
                 'op': 'search',
                 'search[job_salary]': '3',  # Все зарплаты
-                'ga_track': 'all_ads',
+                'ga_track': 'results',  # Изменено с 'all_ads' на 'results'
                 'search[categories][]': ['8', '23'],  # IT и маркетинг категории
+                'badge[categories][]': ['8', '23'],  # Добавляем badge фильтры
                 'search[keyword]': keywords,
                 'search[expires_days]': '',
                 'search[job_lang]': '',
@@ -264,6 +265,11 @@ class CVKeskusScraper:
                     job_data = self._parse_job_element(job_element)
                     if job_data:
                         jobs.append(job_data)
+
+            # Ограничиваем количество результатов если указан limit
+            if limit and len(jobs) > limit:
+                jobs = jobs[:limit]
+                logger.info(f"Limited results to {limit} jobs")
 
             logger.info(f"Successfully parsed {len(jobs)} jobs")
             return jobs
@@ -381,7 +387,7 @@ class CVKeskusScraper:
             logger.error(f"Error parsing job from link: {e}")
             return None
 
-def cvkeskus_scraper(search_url=None):
+def cvkeskus_scraper(search_url=None, limit=None):
     """Функция для использования в других модулях"""
     scraper = CVKeskusScraper()
-    return scraper.search_jobs()
+    return scraper.search_jobs(limit=limit)

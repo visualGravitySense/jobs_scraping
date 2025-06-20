@@ -86,7 +86,7 @@ def scrape_cv_ee_jobs():
         logger.info(f"CV.ee scraping completed: {imported_count} new, {updated_count} updated")
         
         # Запускаем расчет скоров для новых вакансий
-        calculate_job_scores.delay()
+        # calculate_job_scores.delay()  # Celery отключен для разработки
         
         return f"CV.ee scraping completed: {imported_count} new jobs, {updated_count} updated"
         
@@ -120,8 +120,7 @@ def scrape_linkedin_jobs():
         jobs_data = scraper.search_jobs(
             keywords=["software engineer", "developer", "programmer"],
             location="Estonia",
-            email=linkedin_auth.email,
-            password=linkedin_auth.password
+            max_pages=3
         )
         
         imported_count = 0
@@ -169,7 +168,7 @@ def scrape_linkedin_jobs():
         logger.info(f"LinkedIn scraping completed: {imported_count} new, {updated_count} updated")
         
         # Запускаем расчет скоров для новых вакансий
-        calculate_job_scores.delay()
+        # calculate_job_scores.delay()  # Celery отключен для разработки
         
         return f"LinkedIn scraping completed: {imported_count} new jobs, {updated_count} updated"
         
@@ -194,8 +193,6 @@ def scrape_cvkeskus_jobs():
         
         scraper = CVKeskusScraper()
         jobs_data = scraper.search_jobs(
-            keywords=["python", "django", "javascript", "react", "vue", "angular", "node.js"],
-            location="Tallinn",
             max_pages=3
         )
         
@@ -247,7 +244,7 @@ def scrape_cvkeskus_jobs():
         logger.info(f"CVKeskus scraping completed: {imported_count} new, {updated_count} updated")
         
         # Запускаем расчет скоров для новых вакансий
-        calculate_job_scores.delay()
+        # calculate_job_scores.delay()  # Celery отключен для разработки
         
         return f"CVKeskus scraping completed: {imported_count} new jobs, {updated_count} updated"
         

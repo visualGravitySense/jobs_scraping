@@ -13,4 +13,5 @@ urlpatterns = [
     path('scraping/api/scrapers/progress/<str:scraper_name>/', scraper_progress_api, name='scraper_progress_api'),
     path('scraping/api/test-scraper/<int:scraper_id>/', views.test_scraper, name='test_scraper'),
     path('scraping/api/latest-jobs/<int:scraper_id>/', views.get_latest_jobs, name='get_latest_jobs'),
+    path('scraping/api/cvkeskus-it-jobs/', views.get_cvkeskus_it_jobs, name='get_cvkeskus_it_jobs'),
 ] 

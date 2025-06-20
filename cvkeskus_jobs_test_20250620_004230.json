@@ -1,0 +1,417 @@
+[
+  {
+    "title": "MEHAANIK",
+    "company": "Tecalemit AS",
+    "location": "Tallinn",
+    "posted_date": "3 p. tagasi",
+    "url": "https://www.cvkeskus.ee/cvkeskusee-varbamisagentuur-toopakkumised-192966",
+    "raw_data": {
+      "job_id": "976740",
+      "is_saved": 0
+    },
+    "job_id": "976740",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.883297"
+  },
+  {
+    "title": "MÜÜGIKONSULTANT",
+    "company": "Nicorex Baltic OÜ",
+    "location": "Kohtla Järve / Jõhvi",
+    "posted_date": "3 p. tagasi",
+    "url": "https://www.cvkeskus.ee/nicorex-baltic-ou-toopakkumised-132706",
+    "raw_data": {
+      "job_id": "976716",
+      "is_saved": 0
+    },
+    "job_id": "976716",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.884078"
+  },
+  {
+    "title": "Müüja-klienditeenindaja Jüri teenindusjaama (tähtajaline)",
+    "company": "Circle K Eesti",
+    "location": "Jüri / Aruküla",
+    "posted_date": "3 p. tagasi",
+    "url": "https://www.cvkeskus.ee/circle-k-eesti-toopakkumised-4431",
+    "raw_data": {
+      "job_id": "976643",
+      "is_saved": 0
+    },
+    "job_id": "976643",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.885494"
+  },
+  {
+    "title": "Toidumaailma toote-konsultant",
+    "company": "Kaubamaja",
+    "location": "Tallinn",
+    "posted_date": "nädal tagasi",
+    "url": "https://www.cvkeskus.ee/tallinna-kaubamaja-grupp-as-toopakkumised-1559",
+    "raw_data": {
+      "job_id": "976046",
+      "is_saved": 0
+    },
+    "job_id": "976046",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.887719"
+  },
+  {
+    "title": "Meestemaailma teenindaja",
+    "company": "Kaubamaja",
+    "location": "Tallinn",
+    "posted_date": "nädal tagasi",
+    "url": "https://www.cvkeskus.ee/tallinna-kaubamaja-grupp-as-toopakkumised-1559",
+    "raw_data": {
+      "job_id": "975875",
+      "is_saved": 0
+    },
+    "job_id": "975875",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.888372"
+  },
+  {
+    "title": "Automaatik",
+    "company": "Metsä Wood Eesti AS",
+    "location": "Pärnu",
+    "posted_date": "nädal tagasi",
+    "url": "https://www.cvkeskus.ee/cvkeskusee-varbamisagentuur-toopakkumised-192966",
+    "raw_data": {
+      "job_id": "975754",
+      "is_saved": 0
+    },
+    "job_id": "975754",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.889080"
+  },
+  {
+    "title": "OBJEKTIJUHT",
+    "company": "Everster OÜ",
+    "location": "Tallinn",
+    "posted_date": "nädal tagasi",
+    "url": "https://www.cvkeskus.ee/cvkeskusee-varbamisagentuur-toopakkumised-192966",
+    "raw_data": {
+      "job_id": "975725",
+      "is_saved": 0
+    },
+    "job_id": "975725",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.890172"
+  },
+  {
+    "title": "KLIENDITEENINDAJA Rocca al Mare McDonald´s restoranis",
+    "company": "Premier Restaurants Eesti OÜ / McDonald's",
+    "location": "Tallinn",
+    "posted_date": "nädal tagasi",
+    "url": "https://www.cvkeskus.ee/mcdonalds-toopakkumised-3927",
+    "raw_data": {
+      "job_id": "975211",
+      "is_saved": 0
+    },
+    "job_id": "975211",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.890748"
+  },
+  {
+    "title": "Müügiassistent (saksa keele oskusega)",
+    "company": "OÜ Selfdiagnostics EU",
+    "location": "Tallinn\n                        \n                                                                                    /\n                            \n                            Kaugtöö",
+    "posted_date": "nädal tagasi",
+    "url": "https://www.cvkeskus.ee/cvkeskusee-varbamisagentuur-toopakkumised-192966",
+    "raw_data": {
+      "job_id": "975165",
+      "is_saved": 0
+    },
+    "job_id": "975165",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.891296"
+  },
+  {
+    "title": "KLIENDITEENINDAJA Smuuli McDonald´s restoranis",
+    "company": "Premier Restaurants Eesti OÜ / McDonald's",
+    "location": "Tallinn",
+    "posted_date": "2 näd. tagasi",
+    "url": "https://www.cvkeskus.ee/mcdonalds-toopakkumised-3927",
+    "raw_data": {
+      "job_id": "974715",
+      "is_saved": 0
+    },
+    "job_id": "974715",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.891815"
+  },
+  {
+    "title": "KLIENDITEENINDAJA (ehitustarvikute kaupluses)",
+    "company": "Katri OÜ",
+    "location": "Järvamaa",
+    "posted_date": "2 näd. tagasi",
+    "url": "https://www.cvkeskus.ee/cvkeskusee-varbamisagentuur-toopakkumised-192966",
+    "raw_data": {
+      "job_id": "974557",
+      "is_saved": 0
+    },
+    "job_id": "974557",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.892259"
+  },
+  {
+    "title": "Laospetsialist",
+    "company": "Folger Art AS",
+    "location": "Tallinn",
+    "posted_date": "2 näd. tagasi",
+    "url": "https://www.cvkeskus.ee/folger-art-as-toopakkumised-8541",
+    "raw_data": {
+      "job_id": "974468",
+      "is_saved": 0
+    },
+    "job_id": "974468",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.892728"
+  },
+  {
+    "title": "Pagar",
+    "company": "Kaubamaja",
+    "location": "Tallinn",
+    "posted_date": "2 näd. tagasi",
+    "url": "https://www.cvkeskus.ee/tallinna-kaubamaja-grupp-as-toopakkumised-1559",
+    "raw_data": {
+      "job_id": "974211",
+      "is_saved": 0
+    },
+    "job_id": "974211",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.893158"
+  },
+  {
+    "title": "MÜÜGIESINDAJA",
+    "company": "Europarts Autodet AS",
+    "location": "Tallinn",
+    "posted_date": "2 näd. tagasi",
+    "url": "https://www.cvkeskus.ee/cvkeskusee-varbamisagentuur-toopakkumised-192966",
+    "raw_data": {
+      "job_id": "973867",
+      "is_saved": 0
+    },
+    "job_id": "973867",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.893595"
+  },
+  {
+    "title": "EKSPORDI MÜÜGIJUHT",
+    "company": "Innovative Water Systems OÜ",
+    "location": "Jüri / Aruküla",
+    "posted_date": "3 näd. tagasi",
+    "url": "https://www.cvkeskus.ee/cvkeskusee-varbamisagentuur-toopakkumised-192966",
+    "raw_data": {
+      "job_id": "973020",
+      "is_saved": 0
+    },
+    "job_id": "973020",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.894013"
+  },
+  {
+    "title": "MÜÜGIASSISTENT",
+    "company": "Schmitz Cargobull Eesti OÜ",
+    "location": "Harjumaa",
+    "posted_date": "3 näd. tagasi",
+    "url": "https://www.cvkeskus.ee/cvkeskusee-varbamisagentuur-toopakkumised-192966",
+    "raw_data": {
+      "job_id": "971640",
+      "is_saved": 0
+    },
+    "job_id": "971640",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.894459"
+  },
+  {
+    "title": "Taani, norra või rootsi keele oskusega kindlustustoe spetsialist",
+    "company": "If P&C Insurance Ltd (publ) Eesti filiaal",
+    "location": "Tallinn\n                        \n                                                                                    /\n                            \n                            Kaugtöö",
+    "posted_date": "3 näd. tagasi",
+    "url": "https://www.cvkeskus.ee/if-p-c-insurance-as-toopakkumised-5289",
+    "raw_data": {
+      "job_id": "971602",
+      "is_saved": 0
+    },
+    "job_id": "971602",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.894900"
+  },
+  {
+    "title": "Laojuhataja",
+    "company": "No Bananas / Get Fresh Estonia OÜ",
+    "location": "Saku",
+    "posted_date": "3 näd. tagasi",
+    "url": "https://www.cvkeskus.ee/no-bananas-get-fresh-estonia-ou-toopakkumised-107386",
+    "raw_data": {
+      "job_id": "971358",
+      "is_saved": 0
+    },
+    "job_id": "971358",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.895352"
+  },
+  {
+    "title": "METALLITÖÖLINE / TIG-KEEVITAJA",
+    "company": "Indetek OÜ",
+    "location": "Pärnu",
+    "url": "https://www.cvkeskus.ee/cvkeskusee-varbamisagentuur-toopakkumised-192966",
+    "raw_data": {
+      "job_id": "971170",
+      "is_saved": 0
+    },
+    "job_id": "971170",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.895822"
+  },
+  {
+    "title": "TOOTMISJUHT",
+    "company": "Lipuvabrik OÜ",
+    "location": "Tallinn",
+    "url": "https://www.cvkeskus.ee/cvkeskusee-varbamisagentuur-toopakkumised-192966",
+    "raw_data": {
+      "job_id": "971182",
+      "is_saved": 0
+    },
+    "job_id": "971182",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.896347"
+  },
+  {
+    "title": "Nädalavahetuse Müüja - laotöötaja Tähesaju JYSK",
+    "company": "JYSK Linnen'n Furniture OÜ",
+    "location": "Tallinn",
+    "posted_date": "nädal tagasi",
+    "url": "https://www.cvkeskus.ee/jysk-linnenn-furniture-ou-toopakkumised-5684",
+    "raw_data": {
+      "job_id": "975848",
+      "is_saved": 0
+    },
+    "job_id": "975848",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.896839"
+  },
+  {
+    "title": "Kaupluse juhataja asetäitja - Pääsküla Mini Rimi",
+    "company": "Rimi Eesti Food",
+    "location": "Tallinn",
+    "posted_date": "nädal tagasi",
+    "url": "https://www.cvkeskus.ee/rimi-eesti-food-as-toopakkumised-7495",
+    "raw_data": {
+      "job_id": "975759",
+      "is_saved": 0
+    },
+    "job_id": "975759",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.897306"
+  },
+  {
+    "title": "Teenindaja - Tartu Rebase Rimi Hüpermarket",
+    "company": "Rimi Eesti Food",
+    "location": "Tartu",
+    "posted_date": "nädal tagasi",
+    "url": "https://www.cvkeskus.ee/rimi-eesti-food-as-toopakkumised-7495",
+    "raw_data": {
+      "job_id": "975272",
+      "is_saved": 0
+    },
+    "job_id": "975272",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.897811"
+  },
+  {
+    "title": "Müüja - laotöötaja Nautica JYSK (20h nädalas)",
+    "company": "JYSK Linnen'n Furniture OÜ",
+    "location": "Tallinn",
+    "posted_date": "2 näd. tagasi",
+    "url": "https://www.cvkeskus.ee/jysk-linnenn-furniture-ou-toopakkumised-5684",
+    "raw_data": {
+      "job_id": "974237",
+      "is_saved": 0
+    },
+    "job_id": "974237",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.898325"
+  },
+  {
+    "title": "Nädalavahetuse müüja Tähesaju JYSK (tähtajaline 10h nädalas)",
+    "company": "JYSK Linnen'n Furniture OÜ",
+    "location": "Tallinn",
+    "posted_date": "3 näd. tagasi",
+    "url": "https://www.cvkeskus.ee/jysk-linnenn-furniture-ou-toopakkumised-5684",
+    "raw_data": {
+      "job_id": "973381",
+      "is_saved": 0
+    },
+    "job_id": "973381",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.899018"
+  },
+  {
+    "title": "VÄRBAMISJUHT - EESTI PARIMAS E - POES 2025",
+    "company": "Weekend Eesti OÜ",
+    "location": "Tallinn",
+    "posted_date": "3 näd. tagasi",
+    "url": "https://www.cvkeskus.ee/weekend-eesti-ou-toopakkumised-15682",
+    "raw_data": {
+      "job_id": "971706",
+      "is_saved": 0
+    },
+    "job_id": "971706",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.899532"
+  },
+  {
+    "title": "Foorum Vapiano otsib oma tiimi KOKKA! (väljaõpe kohapeal)",
+    "company": "Vapi People OÜ",
+    "location": "Tallinn",
+    "url": "https://www.cvkeskus.ee/apollo-group-ou-toopakkumised-198559",
+    "raw_data": {
+      "job_id": "970785",
+      "is_saved": 0
+    },
+    "job_id": "970785",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.900413"
+  },
+  {
+    "title": "Nädalavahetuse müüja Pärnu JYSK (tähtajaline 10h nädalas)",
+    "company": "JYSK Linnen'n Furniture OÜ",
+    "location": "Pärnu",
+    "url": "https://www.cvkeskus.ee/jysk-linnenn-furniture-ou-toopakkumised-5684",
+    "raw_data": {
+      "job_id": "970748",
+      "is_saved": 0
+    },
+    "job_id": "970748",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.901680"
+  },
+  {
+    "title": "Juhataja asetäitja - Põltsamaa Rimi Mini",
+    "company": "Rimi Eesti Food",
+    "location": "Eesti",
+    "posted_date": "nädal tagasi",
+    "url": "https://www.cvkeskus.ee/rimi-eesti-food-as-toopakkumised-7495",
+    "raw_data": {
+      "job_id": "975460",
+      "is_saved": 0
+    },
+    "job_id": "975460",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.903693"
+  },
+  {
+    "title": "Vanemteenindaja - Maardu Rimi Supermarket",
+    "company": "Rimi Eesti Food",
+    "location": "Maardu",
+    "url": "https://www.cvkeskus.ee/rimi-eesti-food-as-toopakkumised-7495",
+    "raw_data": {
+      "job_id": "974137",
+      "is_saved": 0
+    },
+    "job_id": "974137",
+    "source": "cvkeskus",
+    "scraped_at": "2025-06-20T00:42:30.906693"
+  }
+]

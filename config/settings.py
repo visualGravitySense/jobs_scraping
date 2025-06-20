@@ -50,7 +50,7 @@ INSTALLED_APPS = [
     # Third party apps
     'django_celery_beat',
     'django_celery_results',
-    'django_redis',
+    # 'django_redis',  # Отключен для разработки
 
     # MY Apps
     'apps.scraping',
@@ -213,11 +213,8 @@ LOGGING = {
 # Cache Configuration
 CACHES = {
     'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/1',
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
     }
 }
 
